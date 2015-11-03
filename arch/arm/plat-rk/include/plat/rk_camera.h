@@ -35,9 +35,9 @@
 #define RK29_CAM_EIO_INVALID -1
 #define RK29_CAM_EIO_REQUESTFAIL -2
 
-#define RK_CAM_NUM 6
+#define RK_CAM_NUM 7
 #define RK29_CAM_SUPPORT_NUMS  RK_CAM_NUM
-#define RK_CAM_SUPPORT_RESOLUTION 0x800000
+#define RK_CAM_SUPPORT_RESOLUTION 0x500000
 /*---------------- Camera Sensor Must Define Macro Begin  ------------------------*/
 #define RK29_CAM_SENSOR_OV7675 ov7675
 #define RK29_CAM_SENSOR_OV9650 ov9650
@@ -55,6 +55,7 @@
 #define RK29_CAM_SENSOR_MT9P111 mt9p111
 #define RK29_CAM_SENSOR_MT9T111 mt9t111
 #define RK29_CAM_SENSOR_GT2005  gt2005
+#define RK29_CAM_SENSOR_OV5640_C8002  ov5640_c8002
 #define RK29_CAM_SENSOR_GC0307  gc0307
 #define RK29_CAM_SENSOR_GC0308  gc0308
 #define RK29_CAM_SENSOR_GC0309  gc0309
@@ -114,41 +115,20 @@
 #define ov3640_FULL_RESOLUTION     0x300000           // 3 megapixel
 #define ov3660_FULL_RESOLUTION     0x300000           // 3 megapixel
 #define ov5640_FULL_RESOLUTION     0x500000           // 5 megapixel
-#if defined(CONFIG_SOC_CAMERA_OV5642_INTERPOLATION_8M)
-	#define ov5642_FULL_RESOLUTION     0x800000            // 8 megapixel
-#else	
-    #define ov5642_FULL_RESOLUTION     0x500000           // 5 megapixel
-#endif
+#define ov5642_FULL_RESOLUTION     0x500000           // 5 megapixel
 #define s5k6aa_FULL_RESOLUTION     0x130000           // 1.3 megapixel
 #define mt9d112_FULL_RESOLUTION    0x200000           // 2 megapixel
 #define mt9d113_FULL_RESOLUTION    0x200000           // 2 megapixel
 #define mt9t111_FULL_RESOLUTION    0x300000           // 3 megapixel
 #define mt9p111_FULL_RESOLUTION    0x500000           // 5 megapixel
 #define gt2005_FULL_RESOLUTION     0x200000           // 2 megapixel
-#if defined(CONFIG_SOC_CAMERA_GC0308_INTERPOLATION_5M)
-	#define gc0308_FULL_RESOLUTION     0x500000            // 5 megapixel
-#elif defined(CONFIG_SOC_CAMERA_GC0308_INTERPOLATION_3M)
-	#define gc0308_FULL_RESOLUTION     0x300000            // 3 megapixel
-#elif defined(CONFIG_SOC_CAMERA_GC0308_INTERPOLATION_2M)
-	#define gc0308_FULL_RESOLUTION     0x200000            // 2 megapixel
-#else
-	#define gc0308_FULL_RESOLUTION     0x30000            // 0.3 megapixel#endif
-#endif
-
+#define gc0308_FULL_RESOLUTION     0x30000            // 0.3 megapixel
 #define gc0309_FULL_RESOLUTION     0x30000            // 0.3 megapixel
 #define gc2015_FULL_RESOLUTION     0x200000           // 2 megapixel
 #define siv120b_FULL_RESOLUTION     0x30000            // 0.3 megapixel
 #define siv121d_FULL_RESOLUTION     0x30000            // 0.3 megapixel
 #define sid130B_FULL_RESOLUTION     0x200000           // 2 megapixel    
-
-#if defined(CONFIG_SOC_CAMERA_HI253_INTERPOLATION_5M) 
-	#define hi253_FULL_RESOLUTION       0x500000			// 5 megapixel
-#elif defined(CONFIG_SOC_CAMERA_HI253_INTERPOLATION_3M)
-	#define hi253_FULL_RESOLUTION       0x300000           // 3 megapixel
-#else
-	#define hi253_FULL_RESOLUTION       0x200000           // 2 megapixel
-#endif
-
+#define hi253_FULL_RESOLUTION       0x200000           // 2 megapixel
 #define hi704_FULL_RESOLUTION       0x30000            // 0.3 megapixel
 #define nt99250_FULL_RESOLUTION     0x200000           // 2 megapixel
 #define sp0838_FULL_RESOLUTION      0x30000            // 0.3 megapixel
@@ -179,7 +159,12 @@
 #define RK29_CAM_FLASHACTIVE_MASK	(1<<RK29_CAM_FLASHACTIVE_BITPOS)
 #define RK29_CAM_FLASHACTIVE_H	(0x01<<RK29_CAM_FLASHACTIVE_BITPOS)
 #define RK29_CAM_FLASHACTIVE_L  (0x00<<RK29_CAM_FLASHACTIVE_BITPOS)
-
+// honghaishen_test hhs_1225 start add
+#define RK29_CAM_TORCHACTIVE_BITPOS	0x04
+#define RK29_CAM_TORCHACTIVE_MASK	(1<<RK29_CAM_TORCHACTIVE_BITPOS)
+#define RK29_CAM_TORCHACTIVE_H	(0x01<<RK29_CAM_TORCHACTIVE_BITPOS)
+#define RK29_CAM_TORCHACTIVE_L  (0x00<<RK29_CAM_TORCHACTIVE_BITPOS)
+// honghaishen_test hhs_1225 end
 
 #define RK_CAM_SCALE_CROP_ARM      0
 #define RK_CAM_SCALE_CROP_IPP      1
@@ -215,7 +200,9 @@ enum rk29camera_flash_cmd
 {
     Flash_Off,
     Flash_On,
-    Flash_Torch
+    Flash_Torch_On,
+    Flash_Torch_Off,
+    
 };
 
 struct rk29camera_gpio_res {
@@ -223,6 +210,8 @@ struct rk29camera_gpio_res {
     unsigned int gpio_power;
 	unsigned int gpio_powerdown;
 	unsigned int gpio_flash;
+	// honghaishen_test hhs_1225
+	unsigned int gpio_torch;
 	unsigned int gpio_flag;
 	unsigned int gpio_init;
 	const char *dev_name;
@@ -288,7 +277,5 @@ typedef struct rk29_camera_sensor_cb {
     int (*sensor_cb)(void *arg); 
     int (*scale_crop_cb)(struct work_struct *work);
 }rk29_camera_sensor_cb_s;
-
-int camera_set_platform_param(int id, int i2c, int gpio);
 #endif /* __ASM_ARCH_CAMERA_H_ */
 

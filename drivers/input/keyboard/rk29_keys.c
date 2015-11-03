@@ -29,8 +29,11 @@
 
 #define EMPTY_ADVALUE					950
 #define DRIFT_ADVALUE					70
-#define INVALID_ADVALUE 				10
+#define INVALID_ADVALUE 				-1
 #define EV_MENU					KEY_F1
+#ifdef CONFIG_HALL_KEY
+extern int lcd_mode;
+#endif
 
 
 #if 0
@@ -46,7 +49,6 @@ struct rk29_button_data {
 	struct rk29_keys_button *button;
 	struct input_dev *input;
 	struct timer_list timer;
-        struct rk29_keys_drvdata *ddata;
 };
 
 struct rk29_keys_drvdata {
@@ -63,8 +65,6 @@ static struct input_dev *input_dev;
 struct rk29_keys_Arrary {
 	char keyArrary[20];
 };
-
-static struct rk29_keys_platform_data *m_rk30_keys_data = NULL;
 
 static ssize_t rk29key_set(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
@@ -101,7 +101,6 @@ static ssize_t rk29key_set(struct device *dev,
 	{
 		
 		p = strstr(buf,Arrary[i].keyArrary);
-		if(p==0) continue;
 		
 		start = strcspn(p,":");
 		
@@ -240,7 +239,17 @@ static void keys_timer(unsigned long _data)
 		bdata->state = state;
 		key_dbg(bdata, "%skey[%s]: report ev[%d] state[%d]\n", 
 			(button->gpio == INVALID_GPIO)?"ad":"io", button->desc, button->code, bdata->state);
-		input_event(input, type, button->code, bdata->state);
+        #ifdef CONFIG_HALL_KEY
+		if(button->hall_key){
+			if(state == lcd_mode){
+				input_event(input, type, button->code, 1);
+				input_sync(input);
+				input_event(input, type, button->code, 0);
+				input_sync(input);
+			}	
+		}else
+		#endif
+			input_event(input, type, button->code, bdata->state);
 		input_sync(input);
 	}
 	if(state)
@@ -252,19 +261,7 @@ static irqreturn_t keys_isr(int irq, void *dev_id)
 {
 	struct rk29_button_data *bdata = dev_id;
 	struct rk29_keys_button *button = bdata->button;
-	struct input_dev *input = bdata->input;
-	unsigned int type = EV_KEY;
 	BUG_ON(irq != gpio_to_irq(button->gpio));
-
-        if(button->wakeup == 1 && bdata->ddata->in_suspend == true){
-		key_dbg(bdata, "wakeup: %skey[%s]: report ev[%d] state[%d]\n", 
-			(button->gpio == INVALID_GPIO)?"ad":"io", button->desc, button->code, bdata->state);
-		input_event(input, type, button->code, 1);
-		input_sync(input);
-		input_event(input, type, button->code, 0);
-		input_sync(input);
-	        return IRQ_HANDLED;
-        }
 	bdata->long_press_count = 0;
 	mod_timer(&bdata->timer,
 				jiffies + msecs_to_jiffies(DEFAULT_DEBOUNCE_INTERVAL));
@@ -364,7 +361,6 @@ static int __devinit keys_probe(struct platform_device *pdev)
 
 		bdata->input = input;
 		bdata->button = button;
-                bdata->ddata = ddata;
 		if(button->code_long_press)
 			setup_timer(&bdata->timer,
 			    	keys_long_press_timer, (unsigned long)bdata);
@@ -433,8 +429,8 @@ static int __devinit keys_probe(struct platform_device *pdev)
 		pr_err("failed to create key file error: %d\n", error);
 	}
 
+
 	input_dev = input;
-	m_rk30_keys_data = pdata;
 	return error;
 
  fail2:
@@ -480,45 +476,8 @@ static int __devexit keys_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_NOTEBOOK
-static int m_enable_irq = 1;
-extern int get_mach_is_notebook( void );
-#endif
-
-int set_power_key_interrupt( int status )
-{
-	int i;
-	struct rk29_keys_platform_data *pdata = m_rk30_keys_data;
-	if ( NULL == pdata ){
-		return -1;
-	}
-	if ( m_enable_irq == status ){
-		return -1;
-	}
-	for ( i = 0; i < pdata->nbuttons; i++ ){
-		if ( KEY_POWER != pdata->buttons[i].code ){
-			continue;
-		}else{
-			int irq = gpio_to_irq( pdata->buttons[i].gpio );
-			if ( status ){
-				enable_irq( irq );
-				m_enable_irq = 1;
-				printk( "enable irq KEY_POWER\n" );
-			}else{
-				disable_irq_nosync( irq );
-				m_enable_irq = 0;
-				printk( "disable irq KEY_POWER\n" );
-			}
-			break;
-		}
-	}
-	return 0;
-}
 
 #ifdef CONFIG_PM
-#ifdef CONFIG_NOTEBOOK
-static int m_enable_irq_wake = 0;
-#endif
 static int keys_suspend(struct device *dev)
 {
 	struct rk29_keys_platform_data *pdata = dev_get_platdata(dev);
@@ -532,15 +491,7 @@ static int keys_suspend(struct device *dev)
 			struct rk29_keys_button *button = &pdata->buttons[i];
 			if (button->wakeup) {
 				int irq = gpio_to_irq(button->gpio);
-#ifdef CONFIG_NOTEBOOK
-				if ( 0 == get_mach_is_notebook( ) ){
-					printk( "rk3066 keys enable_irq_wake\n" );
-#endif
-					enable_irq_wake(irq);
-#ifdef CONFIG_NOTEBOOK
-					m_enable_irq_wake = 1;
-				}
-#endif
+				enable_irq_wake(irq);
 			}
 		}
 	}
@@ -559,28 +510,13 @@ static int keys_resume(struct device *dev)
 			struct rk29_keys_button *button = &pdata->buttons[i];
 			if (button->wakeup) {
 				int irq = gpio_to_irq(button->gpio);
-#ifdef CONFIG_NOTEBOOK
-				if ( m_enable_irq_wake ){
-					printk( "rk3066 keys disable_irq_wake\n" );
-#endif
-					disable_irq_wake( irq );
-#ifdef CONFIG_NOTEBOOK
-					m_enable_irq_wake = 0;
-				}
-#endif
+				disable_irq_wake(irq);
 			}
 		}
-
-		preempt_disable();
-		if (local_softirq_pending())
-			do_softirq(); // for call resend_irqs, which may call keys_isr
-		preempt_enable_no_resched();
 	}
 
 	ddata->in_suspend = false;
-#ifdef CONFIG_NOTEBOOK
-	set_power_key_interrupt( 1 );
-#endif
+
 	return 0;
 }
 

@@ -322,8 +322,6 @@ static void rk610_lcd_early_suspend(struct early_suspend *h)
         rk610_output_config(client,g_lcd_inf->screen,LCD_OUT_DISABLE);
     }
 
-    c = 0x10;
-    rk610_scaler_write_p0_reg(client, SCL_CON0, &c);
     if(ENABLE == g_lcd_inf->scl_inf.scl_pwr){
         c= SCL_BYPASS(1) |SCL_DEN_INV(0) |SCL_H_V_SYNC_INV(0) |SCL_OUT_CLK_INV(0) |SCL_ENABLE(DISABLE); 
         rk610_scaler_write_p0_reg(client, SCL_CON0, &c);

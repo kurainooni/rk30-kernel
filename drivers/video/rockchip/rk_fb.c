@@ -33,14 +33,18 @@
 #include "hdmi/rk_hdmi.h"
 #include <linux/linux_logo.h>
 
+#ifdef CONFIG_MALI	//IAM
+#include "ump/ump_kernel_interface.h"
+#endif
+
 void rk29_backlight_set(bool on);
-bool rk29_get_backlight_status(void);
 
-#ifdef	CONFIG_FB_MIRRORING
+#ifdef	FB_WIMO_FLAG   //called FB_MIRRORING in old kernels
 
+#define OLEGK0_CHANGED 1
 
-int (*video_data_to_mirroring)(struct fb_info *info,u32 yuv_phy[2]) = NULL;
-EXPORT_SYMBOL(video_data_to_mirroring);
+int (*video_data_to_wimo)(struct fb_info *info,u32 yuv_phy[2]) = NULL;
+EXPORT_SYMBOL(video_data_to_wimo);
 
 #endif
 static struct platform_device *g_fb_pdev;
@@ -121,30 +125,7 @@ static int rk_fb_close(struct fb_info *info,int user)
 static void fb_copy_by_ipp(struct fb_info *dst_info, struct fb_info *src_info,int offset)
 {
 	struct rk29_ipp_req ipp_req;
-
- 	uint32_t  rotation = 0;
-#if defined(CONFIG_FB_ROTATE)
-	int orientation = orientation = 270 - CONFIG_ROTATE_ORIENTATION;
-	switch(orientation)
-	{
-		case 0:
-			rotation = IPP_ROT_0;
-			break;
-		case 90:
-			rotation = IPP_ROT_90;
-			break;
-		case 180:
-			rotation = IPP_ROT_180;
-			break;
-		case 270:
-			rotation = IPP_ROT_270;
-			break;
-		default:
-			rotation = IPP_ROT_270;
-			break;
-			
-	}
-#endif
+ 
 	memset(&ipp_req, 0, sizeof(struct rk29_ipp_req));
 	ipp_req.src0.YrgbMst = src_info->fix.smem_start + offset;
 	ipp_req.src0.w = src_info->var.xres;
@@ -157,35 +138,18 @@ static void fb_copy_by_ipp(struct fb_info *dst_info, struct fb_info *src_info,in
 	ipp_req.src_vir_w = src_info->var.xres_virtual;
 	ipp_req.dst_vir_w = src_info->var.xres_virtual;
 	ipp_req.timeout = 100;
-	ipp_req.flag = rotation;
+	ipp_req.flag = IPP_ROT_0;
 	ipp_blit_sync(&ipp_req);
 	
 }
-
-
-#if 0
-
 static void hdmi_post_work(struct work_struct *work)
-{	
+{
+	
 	struct rk_fb_inf *inf = container_of(to_delayed_work(work), struct rk_fb_inf, delay_work);
-	struct fb_info * info2 = inf->fb[2];    
-	struct fb_info * info = inf->fb[0];     
-	struct rk_lcdc_device_driver * dev_drv1  = (struct rk_lcdc_device_driver * )info2->par;
-	struct rk_lcdc_device_driver * dev_drv  = (struct rk_lcdc_device_driver * )info->par;
-	struct layer_par *par = dev_drv->layer_par[1];
-	struct layer_par *par2 = dev_drv1->layer_par[1];  	
-	struct fb_var_screeninfo *var = &info->var;   
-	u32 xvir = var->xres_virtual;	
-	dev_drv1->xoffset = var->xoffset;             // offset from virtual to visible 
-	dev_drv1->yoffset += var->yres; 
-	if(dev_drv1->yoffset >= 3*var->yres)
-		dev_drv1->yoffset = 0;++	
-		rk_bufferoffset_tran(dev_drv1->xoffset, dev_drv1->yoffset, xvir , par2);
-	fb_copy_by_ipp(info2,info,par->y_offset,par2->y_offset);
-	dev_drv1->pan_display(dev_drv1,1);
-	complete(&(dev_drv1->ipp_done));
+	struct rk_lcdc_device_driver * dev_drv = inf->lcdc_dev_drv[1];
+	dev_drv->pan_display(dev_drv,1);
+	
 }
-#endif
 
 static int rk_pan_display(struct fb_var_screeninfo *var, struct fb_info *info)
 {
@@ -251,7 +215,7 @@ static int rk_pan_display(struct fb_var_screeninfo *var, struct fb_info *info)
 					par2->y_offset = par->y_offset;
 					//memcpy(info2->screen_base+par2->y_offset,info->screen_base+par->y_offset,
 					//	var->xres*var->yres*var->bits_per_pixel>>3);
-					#if defined(CONFIG_FB_ROTATE) || !defined(CONFIG_THREE_FB_BUFFER)
+					#if !defined(CONFIG_THREE_FB_BUFFER)
 					fb_copy_by_ipp(info2,info,par->y_offset);
 					#endif
 					dev_drv1->pan_display(dev_drv1,layer_id);
@@ -261,12 +225,17 @@ static int rk_pan_display(struct fb_var_screeninfo *var, struct fb_info *info)
 		#endif
 	#endif
 	dev_drv->pan_display(dev_drv,layer_id);
-	#ifdef	CONFIG_FB_MIRRORING
-	if(video_data_to_mirroring!=NULL)
-		video_data_to_mirroring(info,NULL);
+	#ifdef	FB_WIMO_FLAG
+	if(video_data_to_wimo!=NULL)
+		video_data_to_wimo(info,NULL);
  	#endif
 	return 0;
 }
+//IAM
+#ifdef CONFIG_MALI
+int (*disp_get_ump_secure_id)(struct fb_info *info, struct rk_fb_inf *g_fbi, unsigned long arg, int buf);
+EXPORT_SYMBOL(disp_get_ump_secure_id);
+#endif
 static int rk_fb_ioctl(struct fb_info *info, unsigned int cmd,unsigned long arg)
 {
 	struct fb_fix_screeninfo *fix = &info->fix;
@@ -278,6 +247,11 @@ static int rk_fb_ioctl(struct fb_info *info, unsigned int cmd,unsigned long arg)
 	int num_buf; //buffer_number
 	void __user *argp = (void __user *)arg;
 	
+#ifdef CONFIG_MALI
+        int secure_id_buf_num = 0; //IAM
+#endif
+   struct rk_fb_inf *inf = dev_get_drvdata(info->device); //IAM
+
 	switch(cmd)
 	{
  		case FBIOPUT_FBPHYADD:
@@ -317,6 +291,20 @@ static int rk_fb_ioctl(struct fb_info *info, unsigned int cmd,unsigned long arg)
 			dev_drv->num_buf = num_buf;
 			printk("rk fb use %d buffers\n",num_buf);
 			break;
+#ifdef CONFIG_MALI	/*//IAM*/
+		case GET_UMP_SECURE_ID_BUF2: /* flow trough */
+			secure_id_buf_num = 1;
+		case GET_UMP_SECURE_ID_BUF1:
+			{
+			    if (!disp_get_ump_secure_id)
+				request_module("disp_ump");
+			    if (disp_get_ump_secure_id)
+				return disp_get_ump_secure_id(info, inf, arg,
+								secure_id_buf_num);
+			    else
+				return -ENOTSUPP;
+			}
+#endif
 		case FBIOGET_SCREEN_STATE:
 		case FBIOPUT_SET_CURSOR_EN:
 		case FBIOPUT_SET_CURSOR_POS:
@@ -356,7 +344,19 @@ static int rk_fb_blank(int blank_mode, struct fb_info *info)
 #endif
 	{
 		dev_drv->blank(dev_drv,layer_id,blank_mode);
+		if(strstr(saved_command_line,"charger") == NULL){//在非充电界面，hdmi 才走该路径
+			if(blank_mode == FB_BLANK_NORMAL){
+				if(dev_drv->screen_ctr_info->lcd_disable)
+					dev_drv->screen_ctr_info->lcd_disable();
+			}else{
+				if(dev_drv->screen_ctr_info->lcd_enable)
+					dev_drv->screen_ctr_info->lcd_enable();
+
+			}
+		}
 	}
+
+	
 	return 0;
 }
 
@@ -364,8 +364,10 @@ static int rk_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 {
 	
 	if( 0==var->xres_virtual || 0==var->yres_virtual ||
-		 0==var->xres || 0==var->yres || var->xres<16 ||
-		 ((16!=var->bits_per_pixel)&&(32!=var->bits_per_pixel)) )
+//IAM		 0==var->xres || 0==var->yres || var->xres<16 ||
+		 0==var->yres || var->xres<16 ||
+//		 ((16!=var->bits_per_pixel)&&(32!=var->bits_per_pixel)) )
+		 ((16!=var->bits_per_pixel)&&(24!=var->bits_per_pixel)&&(32!=var->bits_per_pixel)) )  //olegk0 adds 24bpp
 	 {
 		 printk("%s check var fail 1!!! \n",info->fix.id);
 		 printk("xres_vir:%d>>yres_vir:%d\n", var->xres_virtual,var->yres_virtual);
@@ -672,7 +674,7 @@ int rk_fb_switch_screen(rk_screen *screen ,int enable ,int lcdc_id)
 	int i;
 	int layer_id;
 
-#if defined(CONFIG_ONE_LCDC_DUAL_OUTPUT_INF) || defined(CONFIG_NO_DUAL_DISP)
+#if defined(CONFIG_ONE_LCDC_DUAL_OUTPUT_INF)
 	rk29_backlight_set(0);
 #endif
 	
@@ -802,10 +804,10 @@ int rk_fb_switch_screen(rk_screen *screen ,int enable ,int lcdc_id)
 	#endif 
 
 #if defined(CONFIG_NO_DUAL_DISP)  //close backlight for device whic do not support dual display
-	if(!enable)
-		rk29_backlight_set(1);
+	rk29_backlight_set(!enable);
 #elif defined(CONFIG_ONE_LCDC_DUAL_OUTPUT_INF)  //close backlight for device whic do not support dual display
-	rk29_backlight_set(1);
+	if(enable)
+		rk29_backlight_set(1);
 #endif
 	return 0;
 
@@ -853,7 +855,7 @@ int rk_fb_disp_scale(u8 scale_x, u8 scale_y,u8 lcdc_id)
 	screen_x = dev_drv->cur_screen->x_res;
 	screen_y = dev_drv->cur_screen->y_res;
 	
-#if defined(CONFIG_ONE_LCDC_DUAL_OUTPUT_INF)||defined(CONFIG_NO_DUAL_DISP)
+#if defined(CONFIG_ONE_LCDC_DUAL_OUTPUT_INF)
 	if(dev_drv->cur_screen->screen_id == 1){
 		dev_drv->cur_screen->xpos = (screen_x-screen_x*scale_x/100)>>1;
 		dev_drv->cur_screen->ypos = (screen_y-screen_y*scale_y/100)>>1;
@@ -886,7 +888,11 @@ static int rk_request_fb_buffer(struct fb_info *fbi,int fb_id)
 	struct rk_fb_inf *fb_inf = platform_get_drvdata(g_fb_pdev);
 	if (!strcmp(fbi->fix.id,"fb0"))
 	{
+#ifdef OLEGK0_CHANGED
+            		res = platform_get_resource_byname(g_fb_pdev, IORESOURCE_MEM, "ipp buf");
+#else
 		res = platform_get_resource_byname(g_fb_pdev, IORESOURCE_MEM, "fb0 buf");
+#endif
 		if (res == NULL)
 		{
 			dev_err(&g_fb_pdev->dev, "failed to get memory for fb0 \n");
@@ -899,10 +905,15 @@ static int rk_request_fb_buffer(struct fb_info *fbi,int fb_id)
 		memset(fbi->screen_base, 0, fbi->fix.smem_len);
 		printk("fb%d:phy:%lx>>vir:%p>>len:0x%x\n",fb_id,
 		fbi->fix.smem_start,fbi->screen_base,fbi->fix.smem_len);
+#ifdef OLEGK0_CHANGED
+		//Galland: next three lines copied to fb_id 0 from olegk0's fb_id 1
+		fbi->fix.mmio_len = (fbi->fix.smem_len >> 1)& ~7;
+		fbi->fix.mmio_start = fbi->fix.smem_start + fbi->fix.mmio_len;
+#endif
 	}
 	else
 	{	
-#if defined(CONFIG_FB_ROTATE) || !defined(CONFIG_THREE_FB_BUFFER)
+#if !defined(CONFIG_THREE_FB_BUFFER)
 		res = platform_get_resource_byname(g_fb_pdev, IORESOURCE_MEM, "fb2 buf");
 		if (res == NULL)
 		{
@@ -997,12 +1008,14 @@ static int init_lcdc_device_driver(struct rk_lcdc_device_driver *dev_drv,
 	dev_drv->get_disp_info  = def_drv->get_disp_info;
 	dev_drv->ovl_mgr	= def_drv->ovl_mgr;
 	dev_drv->fps_mgr	= def_drv->fps_mgr;
+	if(def_drv->fb_get_layer)
+		dev_drv->fb_get_layer   = def_drv->fb_get_layer;
+	if(def_drv->fb_layer_remap)
+		dev_drv->fb_layer_remap = def_drv->fb_layer_remap;
 	if(def_drv->set_dsp_lut)
 		dev_drv->set_dsp_lut    = def_drv->set_dsp_lut;
 	if(def_drv->read_dsp_lut)
 		dev_drv->read_dsp_lut   = def_drv->read_dsp_lut;
-	dev_drv->fb_get_layer   = def_drv->fb_get_layer;
-	dev_drv->fb_layer_remap = def_drv->fb_layer_remap;
 	init_layer_par(dev_drv);
 	init_completion(&dev_drv->frame_done);
 	spin_lock_init(&dev_drv->cpl_lock);
@@ -1012,6 +1025,7 @@ static int init_lcdc_device_driver(struct rk_lcdc_device_driver *dev_drv,
 	
 	return 0;
 }
+ 
 #ifdef CONFIG_LOGO_LINUX_BMP
 static struct linux_logo *bmp_logo;
 static int fb_prepare_bmp_logo(struct fb_info *info, int rotate)
@@ -1041,7 +1055,10 @@ static void fb_show_bmp_logo(struct fb_info *info, int rotate)
 	
 }
 #endif
-
+#if defined(CONFIG_POWER_ON_CHARGER_DISPLAY)
+extern int g_charge_status;
+#include <linux/power_supply.h>
+#endif
 int rk_fb_register(struct rk_lcdc_device_driver *dev_drv,
 	struct rk_lcdc_device_driver *def_drv,int id)
 {
@@ -1152,12 +1169,34 @@ int rk_fb_register(struct rk_lcdc_device_driver *dev_drv,
     {
 	    fb_inf->fb[0]->fbops->fb_open(fb_inf->fb[0],1);
 	    fb_inf->fb[0]->fbops->fb_set_par(fb_inf->fb[0]);
-	    if(fb_prepare_logo(fb_inf->fb[0], FB_ROTATE_UR)) {
-	        /* Start display and show logo on boot */
-	        fb_set_cmap(&fb_inf->fb[0]->cmap, fb_inf->fb[0]);
-	        fb_show_logo(fb_inf->fb[0], FB_ROTATE_UR);
-		fb_inf->fb[0]->fbops->fb_pan_display(&(fb_inf->fb[0]->var), fb_inf->fb[0]);
-	    }
+
+#if  defined(CONFIG_LOGO_LINUX_BMP)
+		if(fb_prepare_bmp_logo(fb_inf->fb[0], FB_ROTATE_UR)) {
+			/* Start display and show logo on boot */
+			fb_set_cmap(&fb_inf->fb[0]->cmap, fb_inf->fb[0]);
+			fb_show_bmp_logo(fb_inf->fb[0], FB_ROTATE_UR);
+			fb_inf->fb[0]->fbops->fb_pan_display(&(fb_inf->fb[0]->var), fb_inf->fb[0]);
+		}
+#else
+		#if defined(CONFIG_POWER_ON_CHARGER_DISPLAY)
+		if(g_charge_status != POWER_SUPPLY_STATUS_CHARGING)
+		{
+			if(fb_prepare_logo(fb_inf->fb[0], FB_ROTATE_UR)) {
+				/* Start display and show logo on boot */
+				fb_set_cmap(&fb_inf->fb[0]->cmap, fb_inf->fb[0]);
+				fb_show_logo(fb_inf->fb[0], FB_ROTATE_UR);
+				fb_inf->fb[0]->fbops->fb_pan_display(&(fb_inf->fb[0]->var), fb_inf->fb[0]);
+			}
+		}
+		#else
+			if(fb_prepare_logo(fb_inf->fb[0], FB_ROTATE_UR)) {
+				/* Start display and show logo on boot */
+				fb_set_cmap(&fb_inf->fb[0]->cmap, fb_inf->fb[0]);
+				fb_show_logo(fb_inf->fb[0], FB_ROTATE_UR);
+				fb_inf->fb[0]->fbops->fb_pan_display(&(fb_inf->fb[0]->var), fb_inf->fb[0]);
+			}
+		#endif
+#endif
 		
     }
 #endif

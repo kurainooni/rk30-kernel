@@ -16,9 +16,6 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
-#ifdef CONFIG_USB_ANDROID
-#include <linux/usb/android_composite.h>
-#endif
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
 #include <asm/pmu.h>
@@ -51,6 +48,7 @@ struct platform_device device_adc = {
 };
 #endif
 
+#if !defined(CONFIG_ARCH_RK3066B)
 static struct resource rk30_tsadc_resource[] = {
 	{
 		.start	= IRQ_TSADC,
@@ -64,12 +62,13 @@ static struct resource rk30_tsadc_resource[] = {
 	},
 };
 
-struct platform_device device_tsadc = {
+static struct platform_device device_tsadc = {
 	.name		= "rk30-tsadc",
 	.id		= -1,
 	.num_resources	= ARRAY_SIZE(rk30_tsadc_resource),
 	.resource	= rk30_tsadc_resource,
 };
+#endif
 
 static u64 dma_dmamask = DMA_BIT_MASK(32);
 
@@ -85,6 +84,7 @@ static struct resource resource_dmac1[] = {
 		.flags	= IORESOURCE_IRQ,
 	},
 };
+#if defined(CONFIG_ARCH_RK3066B)
 
 static struct rk29_pl330_platdata dmac1_pdata = {
 	.peri = {
@@ -92,13 +92,13 @@ static struct rk29_pl330_platdata dmac1_pdata = {
 		[1] = DMACH_UART0_RX,
 		[2] = DMACH_UART1_TX,
 		[3] = DMACH_UART1_RX,
-		[4] = DMACH_I2S0_8CH_TX,
-		[5] = DMACH_I2S0_8CH_RX,
+		[4] = DMACH_MAX,
+		[5] = DMACH_MAX,
 		[6] = DMACH_I2S1_2CH_TX,
 		[7] = DMACH_I2S1_2CH_RX,
 		[8] = DMACH_SPDIF_TX,
-		[9] = DMACH_I2S2_2CH_TX,
-		[10] = DMACH_I2S2_2CH_RX,
+		[9] = DMACH_DMAC0_MEMTOMEM,
+		[10] = DMACH_MAX,
 		[11] = DMACH_MAX,
 		[12] = DMACH_MAX,
 		[13] = DMACH_MAX,
@@ -122,6 +122,47 @@ static struct rk29_pl330_platdata dmac1_pdata = {
 		[31] = DMACH_MAX,
 	},
 };
+
+#else 
+
+static struct rk29_pl330_platdata dmac1_pdata = {
+	.peri = {
+		[0] = DMACH_UART0_TX,
+		[1] = DMACH_UART0_RX,
+		[2] = DMACH_UART1_TX,
+		[3] = DMACH_UART1_RX,
+		[4] = DMACH_I2S0_8CH_TX,
+		[5] = DMACH_I2S0_8CH_RX,
+		[6] = DMACH_I2S1_2CH_TX,
+		[7] = DMACH_I2S1_2CH_RX,
+		[8] = DMACH_SPDIF_TX,
+		[9] = DMACH_I2S2_2CH_TX,
+		[10] = DMACH_I2S2_2CH_RX,
+		[11] = DMACH_DMAC0_MEMTOMEM,
+		[12] = DMACH_MAX,
+		[13] = DMACH_MAX,
+		[14] = DMACH_MAX,
+		[15] = DMACH_MAX,
+		[16] = DMACH_MAX,
+		[17] = DMACH_MAX,
+		[18] = DMACH_MAX,
+		[19] = DMACH_MAX,
+		[20] = DMACH_MAX,
+		[21] = DMACH_MAX,
+		[22] = DMACH_MAX,
+		[23] = DMACH_MAX,
+		[24] = DMACH_MAX,
+		[25] = DMACH_MAX,
+		[26] = DMACH_MAX,
+		[27] = DMACH_MAX,
+		[28] = DMACH_MAX,
+		[29] = DMACH_MAX,
+		[30] = DMACH_MAX,
+		[31] = DMACH_MAX,
+	},
+};
+
+#endif
 
 static struct platform_device device_dmac1 = {
 	.name		= "rk29-pl330",
@@ -164,7 +205,7 @@ static struct rk29_pl330_platdata dmac2_pdata = {
 		[11] = DMACH_SPI0_RX,
 		[12] = DMACH_SPI1_TX,
 		[13] = DMACH_SPI1_RX,
-		[14] = DMACH_DMAC2_MEMTOMEM,
+		[14] = DMACH_DMAC1_MEMTOMEM,
 		[15] = DMACH_MAX,
 		[16] = DMACH_MAX,
 		[17] = DMACH_MAX,
@@ -312,6 +353,8 @@ static void __init rk30_init_uart(void)
 }
 
 // i2c
+#ifdef CONFIG_I2C_RK30
+
 #ifdef CONFIG_I2C0_CONTROLLER_RK29
 #define I2C0_ADAP_TYPE  I2C_RK29_ADAP
 #define I2C0_START      RK30_I2C0_PHYS
@@ -367,28 +410,163 @@ static void __init rk30_init_uart(void)
 #define I2C4_END        RK30_I2C4_PHYS + SZ_16K - 1
 #endif
 
-#ifdef CONFIG_I2C0_RK30
-static int i2c0_check_idle(void)
+struct i2c_iomux{
+        int scl_pin;
+        char *scl_name;
+        unsigned int scl_i2c_mode;
+        unsigned int scl_gpio_mode;
+
+        int sda_pin;
+        char *sda_name;
+        unsigned int sda_i2c_mode;
+        unsigned int sda_gpio_mode;
+
+        char *req_name;
+};
+#ifdef CONFIG_ARCH_RK3066B
+static struct i2c_iomux iomux[] = {
+        {
+                .scl_pin = RK30_PIN1_PD1,
+                .scl_name = GPIO1D1_I2C0SCL_NAME,
+                .scl_i2c_mode = GPIO1D_I2C0SCL,
+                .scl_gpio_mode = 0,
+                .sda_pin = RK30_PIN1_PD0,
+                .sda_name = GPIO1D0_I2C0SDA_NAME,
+                .sda_i2c_mode = GPIO1D_I2C0SDA,
+                .sda_gpio_mode = 0,
+                .req_name = "i2c.0",
+        },
+        {
+                .scl_pin = RK30_PIN1_PD3,
+                .scl_name = GPIO1D3_I2C1SCL_NAME,
+                .scl_i2c_mode = GPIO1D_I2C1SCL,
+                .scl_gpio_mode = 0,
+                .sda_pin = RK30_PIN1_PD2,
+                .sda_name = GPIO1D2_I2C1SDA_NAME,
+                .sda_i2c_mode = GPIO1D_I2C1SDA,
+                .sda_gpio_mode = 0,
+                .req_name = "i2c.1",
+        },
+        {
+                .scl_pin = RK30_PIN1_PD5,
+                .scl_name = GPIO1D5_I2C2SCL_NAME,
+                .scl_i2c_mode = GPIO1D_I2C2SCL,
+                .scl_gpio_mode = 0,
+                .sda_pin = RK30_PIN1_PD4,
+                .sda_name = GPIO1D4_I2C2SDA_NAME,
+                .sda_i2c_mode = GPIO1D_I2C2SDA,
+                .sda_gpio_mode = 0,
+                .req_name = "i2c.2",
+        },
+        {
+                .scl_pin = RK30_PIN3_PB7,
+                .scl_name = GPIO3B7_CIFDATA11_I2C3SCL_NAME,
+                .scl_i2c_mode = GPIO3B_I2C3SCL,
+                .scl_gpio_mode = 0,
+                .sda_pin = RK30_PIN3_PB6,
+                .sda_name = GPIO3B6_CIFDATA10_I2C3SDA_NAME,
+                .sda_i2c_mode = GPIO3B_I2C3SDA,
+                .sda_gpio_mode = 0,
+                .req_name = "i2c.3",
+        },
+        {
+                .scl_pin = RK30_PIN1_PD7,
+                .scl_name = GPIO1D7_I2C4SCL_NAME,
+                .scl_i2c_mode = GPIO1D_I2C4SCL,
+                .scl_gpio_mode = 0,
+                .sda_pin = RK30_PIN1_PD6,
+                .sda_name = GPIO1D6_I2C4SDA_NAME,
+                .sda_i2c_mode = GPIO1D_I2C4SDA,
+                .sda_gpio_mode = 0,
+                .req_name = "i2c.4",
+        },
+};
+#else
+static struct i2c_iomux iomux[] = {
+        {
+                .scl_pin = RK30_PIN2_PD5,
+                .scl_name = GPIO2D5_I2C0SCL_NAME,
+                .scl_i2c_mode = GPIO2D_I2C0_SCL,
+                .scl_gpio_mode = 0,
+                .sda_pin = RK30_PIN2_PD4,
+                .sda_name = GPIO2D4_I2C0SDA_NAME,
+                .sda_i2c_mode = GPIO2D_I2C0_SDA,
+                .sda_gpio_mode = 0,
+                .req_name = "i2c.0",
+        },
+        {
+                .scl_pin = RK30_PIN2_PD7,
+                .scl_name = GPIO2D7_I2C1SCL_NAME,
+                .scl_i2c_mode = GPIO2D_I2C1_SCL,
+                .scl_gpio_mode = 0,
+                .sda_pin = RK30_PIN2_PD6,
+                .sda_name = GPIO2D6_I2C1SDA_NAME,
+                .sda_i2c_mode = GPIO2D_I2C1_SDA,
+                .sda_gpio_mode = 0,
+                .req_name = "i2c.1",
+        },
+        {
+                .scl_pin = RK30_PIN3_PA1,
+                .scl_name = GPIO3A1_I2C2SCL_NAME,
+                .scl_i2c_mode = GPIO3A_I2C2_SCL,
+                .scl_gpio_mode = 0,
+                .sda_pin = RK30_PIN3_PA0,
+                .sda_name = GPIO3A0_I2C2SDA_NAME,
+                .sda_i2c_mode = GPIO3A_I2C2_SDA,
+                .sda_gpio_mode = 0,
+                .req_name = "i2c.2",
+        },
+        {
+                .scl_pin = RK30_PIN3_PA3,
+                .scl_name = GPIO3A3_I2C3SCL_NAME,
+                .scl_i2c_mode = GPIO3A_I2C3_SCL,
+                .scl_gpio_mode = 0,
+                .sda_pin = RK30_PIN3_PA2,
+                .sda_name = GPIO3A2_I2C3SDA_NAME,
+                .sda_i2c_mode = GPIO3A_I2C3_SDA,
+                .sda_gpio_mode = 0,
+                .req_name = "i2c.3",
+        },
+        {
+                .scl_pin = RK30_PIN3_PA5,
+                .scl_name = GPIO3A5_I2C4SCL_NAME,
+                .scl_i2c_mode = GPIO3A_I2C4_SCL,
+                .scl_gpio_mode = 0,
+                .sda_pin = RK30_PIN3_PA4,
+                .sda_name = GPIO3A4_I2C4SDA_NAME,
+                .sda_i2c_mode = GPIO3A_I2C4_SDA,
+                .sda_gpio_mode = 0,
+                .req_name = "i2c.4",
+        },
+};
+#endif
+static int i2c_check_idle(int id)
 {
         int sda_level, scl_level;
-        rk30_mux_api_set(GPIO2D5_I2C0SCL_NAME, GPIO2D_GPIO2D5);	
-	rk30_mux_api_set(GPIO2D4_I2C0SDA_NAME, GPIO2D_GPIO2D4);
 
-        gpio_request(RK30_PIN2_PD5, "i2c.0");
-        gpio_request(RK30_PIN2_PD4, "i2c.0");
+        if(id < 0 || id > 4){
+                printk("Error: id: %d\n", id);
+                return -1;
+        }
+
+        rk30_mux_api_set(iomux[id].scl_name, iomux[id].scl_gpio_mode);	
+        rk30_mux_api_set(iomux[id].sda_name, iomux[id].sda_gpio_mode);	
+
+        gpio_request(iomux[id].scl_pin, iomux[id].req_name);
+        gpio_request(iomux[id].sda_pin, iomux[id].req_name);
         
-        gpio_direction_input(RK30_PIN2_PD5);
-        gpio_direction_input(RK30_PIN2_PD4);
+        gpio_direction_input(iomux[id].scl_pin);
+        gpio_direction_input(iomux[id].sda_pin);
 
-        scl_level = gpio_get_value(RK30_PIN2_PD5);
-        sda_level = gpio_get_value(RK30_PIN2_PD4);
+        scl_level = gpio_get_value(iomux[id].scl_pin);
+        sda_level = gpio_get_value(iomux[id].sda_pin);
 
-        gpio_free(RK30_PIN2_PD5);
-        gpio_free(RK30_PIN2_PD4);
+        gpio_free(iomux[id].scl_pin);
+        gpio_free(iomux[id].sda_pin);
 
-        rk30_mux_api_set(GPIO2D5_I2C0SCL_NAME, GPIO2D_I2C0_SCL);	
-	rk30_mux_api_set(GPIO2D4_I2C0SDA_NAME, GPIO2D_I2C0_SDA);
-
+        rk30_mux_api_set(iomux[id].scl_name, iomux[id].scl_i2c_mode);	
+        rk30_mux_api_set(iomux[id].sda_name, iomux[id].sda_i2c_mode);	
+        
         if(sda_level == 1 && scl_level == 1)
                 return I2C_IDLE;
         else if(sda_level == 0 && scl_level == 1)
@@ -399,11 +577,16 @@ static int i2c0_check_idle(void)
                 return BOTH_LOW;
 }
 
+#ifdef CONFIG_I2C0_RK30
 static struct rk30_i2c_platform_data default_i2c0_data = {
 	.bus_num = 0,
+#if defined(CONFIG_ARCH_RK3066B)
+	.is_div_from_arm = 0,
+#else
 	.is_div_from_arm = 1,
+#endif
 	.adap_type = I2C0_ADAP_TYPE,
-        .check_idle = &i2c0_check_idle,
+        .check_idle = &i2c_check_idle,
 };
 
 static struct resource resources_i2c0[] = {
@@ -431,42 +614,15 @@ static struct platform_device device_i2c0 = {
 #endif
 
 #ifdef CONFIG_I2C1_RK30
-static int i2c1_check_idle(void)
-{
-        int sda_level, scl_level;
-        rk30_mux_api_set(GPIO2D7_I2C1SCL_NAME, GPIO2D_GPIO2D7);	
-	rk30_mux_api_set(GPIO2D6_I2C1SDA_NAME, GPIO2D_GPIO2D6);
-
-        gpio_request(RK30_PIN2_PD7, "i2c.1");
-        gpio_request(RK30_PIN2_PD6, "i2c.1");
-        
-        gpio_direction_input(RK30_PIN2_PD7);
-        gpio_direction_input(RK30_PIN2_PD6);
-
-        sda_level = gpio_get_value(RK30_PIN2_PD7);
-        scl_level = gpio_get_value(RK30_PIN2_PD6);
-
-        gpio_free(RK30_PIN2_PD7);
-        gpio_free(RK30_PIN2_PD6);
-
-        rk30_mux_api_set(GPIO2D7_I2C1SCL_NAME, GPIO2D_I2C1_SCL);	
-	rk30_mux_api_set(GPIO2D6_I2C1SDA_NAME, GPIO2D_I2C1_SDA);
-
-        if(sda_level == 1 && scl_level == 1)
-                return I2C_IDLE;
-        else if(sda_level == 0 && scl_level == 1)
-                return I2C_SDA_LOW;
-        else if(sda_level == 1 && scl_level == 0)
-                return I2C_SCL_LOW;
-        else
-                return BOTH_LOW;
-}
-
 static struct rk30_i2c_platform_data default_i2c1_data = {
 	.bus_num = 1,
+#if defined(CONFIG_ARCH_RK3066B)
+	.is_div_from_arm = 0,
+#else
 	.is_div_from_arm = 1,
+#endif
 	.adap_type = I2C1_ADAP_TYPE,
-        .check_idle = &i2c1_check_idle,
+        .check_idle = &i2c_check_idle,
 };
 
 static struct resource resources_i2c1[] = {
@@ -494,43 +650,11 @@ static struct platform_device device_i2c1 = {
 #endif
 
 #ifdef CONFIG_I2C2_RK30
-static int i2c2_check_idle(void)
-{
-        int sda_level, scl_level;
-        rk30_mux_api_set(GPIO3A1_I2C2SCL_NAME, GPIO3A_GPIO3A1);	
-	rk30_mux_api_set(GPIO3A0_I2C2SDA_NAME, GPIO3A_GPIO3A0);
-
-        gpio_request(RK30_PIN3_PA1, "i2c.2");
-        gpio_request(RK30_PIN3_PA0, "i2c.2");
-        
-        gpio_direction_input(RK30_PIN3_PA1);
-        gpio_direction_input(RK30_PIN3_PA0);
-
-        sda_level = gpio_get_value(RK30_PIN3_PA1);
-        scl_level = gpio_get_value(RK30_PIN3_PA0);
-
-        gpio_free(RK30_PIN3_PA1);
-        gpio_free(RK30_PIN3_PA0);
-
-        rk30_mux_api_set(GPIO3A1_I2C2SCL_NAME, GPIO3A_I2C2_SCL);	
-	rk30_mux_api_set(GPIO3A0_I2C2SDA_NAME, GPIO3A_I2C2_SDA);
-
-        if(sda_level == 1 && scl_level == 1)
-                return I2C_IDLE;
-        else if(sda_level == 0 && scl_level == 1)
-                return I2C_SDA_LOW;
-        else if(sda_level == 1 && scl_level == 0)
-                return I2C_SCL_LOW;
-        else
-                return BOTH_LOW;
-}
-
-
 static struct rk30_i2c_platform_data default_i2c2_data = {
 	.bus_num = 2,
 	.is_div_from_arm = 0,
 	.adap_type = I2C2_ADAP_TYPE,
-        .check_idle = &i2c2_check_idle,
+        .check_idle = &i2c_check_idle,
 };
 
 static struct resource resources_i2c2[] = {
@@ -558,43 +682,11 @@ static struct platform_device device_i2c2 = {
 #endif
 
 #ifdef CONFIG_I2C3_RK30
-static int i2c3_check_idle(void)
-{
-        int sda_level, scl_level;
-        rk30_mux_api_set(GPIO3A3_I2C3SCL_NAME, GPIO3A_GPIO3A3);	
-	rk30_mux_api_set(GPIO3A2_I2C3SDA_NAME, GPIO3A_GPIO3A2);
-
-        gpio_request(RK30_PIN3_PA3, "i2c.3");
-        gpio_request(RK30_PIN3_PA2, "i2c.3");
-        
-        gpio_direction_input(RK30_PIN3_PA3);
-        gpio_direction_input(RK30_PIN3_PA2);
-
-        sda_level = gpio_get_value(RK30_PIN3_PA3);
-        scl_level = gpio_get_value(RK30_PIN3_PA2);
-
-        gpio_free(RK30_PIN3_PA3);
-        gpio_free(RK30_PIN3_PA2);
-
-        rk30_mux_api_set(GPIO3A3_I2C3SCL_NAME, GPIO3A_I2C3_SCL);	
-	rk30_mux_api_set(GPIO3A2_I2C3SDA_NAME, GPIO3A_I2C3_SDA);
-
-        if(sda_level == 1 && scl_level == 1)
-                return I2C_IDLE;
-        else if(sda_level == 0 && scl_level == 1)
-                return I2C_SDA_LOW;
-        else if(sda_level == 1 && scl_level == 0)
-                return I2C_SCL_LOW;
-        else
-                return BOTH_LOW;
-}
-
-
 static struct rk30_i2c_platform_data default_i2c3_data = {
 	.bus_num = 3,
 	.is_div_from_arm = 0,
 	.adap_type = I2C3_ADAP_TYPE,
-        .check_idle = &i2c3_check_idle,
+        .check_idle = &i2c_check_idle,
 };
 
 static struct resource resources_i2c3[] = {
@@ -622,42 +714,11 @@ static struct platform_device device_i2c3 = {
 #endif
 
 #ifdef CONFIG_I2C4_RK30
-static int i2c4_check_idle(void)
-{
-        int sda_level, scl_level;
-        rk30_mux_api_set(GPIO3A5_I2C4SCL_NAME, GPIO3A_GPIO3A5);	
-	rk30_mux_api_set(GPIO3A4_I2C4SDA_NAME, GPIO3A_GPIO3A4);
-
-        gpio_request(RK30_PIN3_PA5, "i2c.4");
-        gpio_request(RK30_PIN3_PA4, "i2c.4");
-        
-        gpio_direction_input(RK30_PIN3_PA5);
-        gpio_direction_input(RK30_PIN3_PA4);
-
-        scl_level = gpio_get_value(RK30_PIN3_PA5);
-        sda_level = gpio_get_value(RK30_PIN3_PA4);
-
-        gpio_free(RK30_PIN3_PA5);
-        gpio_free(RK30_PIN3_PA4);
-
-        rk30_mux_api_set(GPIO3A5_I2C4SCL_NAME, GPIO3A_I2C4_SCL);	
-	rk30_mux_api_set(GPIO3A4_I2C4SDA_NAME, GPIO3A_I2C4_SDA);
-
-        if(sda_level == 1 && scl_level == 1)
-                return I2C_IDLE;
-        else if(sda_level == 0 && scl_level == 1)
-                return I2C_SDA_LOW;
-        else if(sda_level == 1 && scl_level == 0)
-                return I2C_SCL_LOW;
-        else
-                return BOTH_LOW;
-}
-
 static struct rk30_i2c_platform_data default_i2c4_data = {
 	.bus_num = 4,
 	.is_div_from_arm = 0,
 	.adap_type = I2C4_ADAP_TYPE,
-        .check_idle = &i2c4_check_idle,
+        .check_idle = &i2c_check_idle,
 };
 
 static struct resource resources_i2c4[] = {
@@ -715,7 +776,8 @@ static void __init rk30_init_i2c(void)
 	platform_device_register(&device_i2c_gpio);
 #endif
 }
-//end of i2c
+
+#endif//end of i2c
 
 #if defined(CONFIG_SPIM0_RK29) || defined(CONFIG_SPIM1_RK29)
 /*****************************************************************************************
@@ -762,6 +824,21 @@ static int spi_io_resume_leakage_bug(void)
  */
 #ifdef CONFIG_SPIM0_RK29
 static struct spi_cs_gpio rk29xx_spi0_cs_gpios[SPI_CHIPSELECT_NUM] = {
+#if defined(CONFIG_ARCH_RK3066B)
+	{
+		.name = "spi0 cs0",
+		.cs_gpio = RK30_PIN1_PA7,
+		.cs_iomux_name = GPIO1A7_UART1RTSN_SPI0CSN0_NAME,
+		.cs_iomux_mode = GPIO1A_SPI0CSN0,
+	},
+	{
+		.name = "spi0 cs1",
+		.cs_gpio = RK30_PIN1_PB7,
+		.cs_iomux_name = GPIO1B7_SPI0CSN1_NAME,//if no iomux,set it NULL
+		.cs_iomux_mode = GPIO1B_SPI0CSN1,
+	}
+
+#else
 	{
 		.name = "spi0 cs0",
 		.cs_gpio = RK30_PIN1_PA4,
@@ -774,6 +851,7 @@ static struct spi_cs_gpio rk29xx_spi0_cs_gpios[SPI_CHIPSELECT_NUM] = {
 		.cs_iomux_name = GPIO4B7_SPI0CSN1_NAME,//if no iomux,set it NULL
 		.cs_iomux_mode = GPIO4B_SPI0_CSN1,
 	}
+#endif
 };
 
 static struct rk29xx_spi_platform_data rk29xx_spi0_platdata = {
@@ -823,6 +901,21 @@ struct platform_device rk29xx_device_spi0m = {
 
 #ifdef CONFIG_SPIM1_RK29
 static struct spi_cs_gpio rk29xx_spi1_cs_gpios[SPI_CHIPSELECT_NUM] = {
+#if defined(CONFIG_ARCH_RK3066B)			
+	{
+		.name = "spi1 cs0",
+		.cs_gpio = RK30_PIN0_PD7,
+		.cs_iomux_name = GPIO0D7_SPI1CSN0_NAME,
+		.cs_iomux_mode = GPIO0D_SPI1CSN0,
+	},
+	{
+		.name = "spi1 cs1",
+		.cs_gpio = RK30_PIN1_PB6,
+		.cs_iomux_name = GPIO1B6_SPDIFTX_SPI1CSN1_NAME,//if no iomux,set it NULL
+		.cs_iomux_mode = GPIO1B_SPI1CSN1,
+	}
+	
+#else
 	{
 		.name = "spi1 cs0",
 		.cs_gpio = RK30_PIN2_PC4,
@@ -835,6 +928,7 @@ static struct spi_cs_gpio rk29xx_spi1_cs_gpios[SPI_CHIPSELECT_NUM] = {
 		.cs_iomux_name = GPIO2C7_LCDC1DATA23_SPI1CSN1_HSADCDATA4_NAME,//if no iomux,set it NULL
 		.cs_iomux_mode = GPIO2C_SPI1_CSN1,
 	}
+#endif
 };
 
 static struct rk29xx_spi_platform_data rk29xx_spi1_platdata = {
@@ -1088,51 +1182,7 @@ static void __init rk30_init_i2s(void)
 	platform_device_register(&device_pcm);
 }
 
-#ifdef CONFIG_USB20_OTG
-/*DWC_OTG*/
-static struct resource usb20_otg_resource[] = {
-	{
-		.start = IRQ_USB_OTG,
-		.end   = IRQ_USB_OTG,
-		.flags = IORESOURCE_IRQ,
-	},
-	{
-		.start = RK30_USBOTG20_PHYS,
-		.end   = RK30_USBOTG20_PHYS + RK30_USBOTG20_SIZE - 1,
-		.flags = IORESOURCE_MEM,
-	},
 
-};
-
-struct platform_device device_usb20_otg = {
-	.name		  = "usb20_otg",
-	.id		  = -1,
-	.num_resources	  = ARRAY_SIZE(usb20_otg_resource),
-	.resource	  = usb20_otg_resource,
-};
-#endif
-#ifdef CONFIG_USB20_HOST
-static struct resource usb20_host_resource[] = {
-    {
-        .start = IRQ_USB_HOST,
-        .end   = IRQ_USB_HOST,
-        .flags = IORESOURCE_IRQ,
-    },
-    {
-        .start = RK30_USBHOST20_PHYS,
-        .end   = RK30_USBHOST20_PHYS + RK30_USBHOST20_SIZE - 1,
-        .flags = IORESOURCE_MEM,
-    },
-
-};
-
-struct platform_device device_usb20_host = {
-    .name             = "usb20_host",
-    .id               = -1,
-    .num_resources    = ARRAY_SIZE(usb20_host_resource),
-    .resource         = usb20_host_resource,
-};
-#endif
 
 #ifdef CONFIG_KEYS_RK29
 extern struct rk29_keys_platform_data rk29_keys_pdata;
@@ -1233,42 +1283,85 @@ static struct platform_device device_vmac = {
 };
 #endif
 
+#ifdef CONFIG_RK29_WATCHDOG
+static struct resource resources_wdt[] = {
+	{
+		.start	= IRQ_WDT,
+		.end	= IRQ_WDT,
+		.flags	= IORESOURCE_IRQ,
+	},
+	{
+		.start	= RK30_WDT_PHYS,
+		.end	= RK30_WDT_PHYS + RK30_WDT_SIZE - 1,
+		.flags	= IORESOURCE_MEM,
+	},
+};
+
+static struct platform_device device_wdt = {
+	.name	= "rk29-wdt",
+	.id	= 0,
+	.num_resources	= ARRAY_SIZE(resources_wdt),
+	.resource	= resources_wdt,
+};
+#endif
+
+static struct resource resource_arm_pmu[] = {
+	{
+		.start	= IRQ_ARM_PMU,
+		.end	= IRQ_ARM_PMU,
+		.flags	= IORESOURCE_IRQ,
+	},
+	{
+		.start	= IRQ_ARM_PMU + 1,
+		.end	= IRQ_ARM_PMU + 1,
+		.flags	= IORESOURCE_IRQ,
+	},
+};
+
+struct platform_device device_arm_pmu = {
+	.name		= "arm-pmu",
+	.id		= ARM_PMU_DEVICE_CPU,
+	.num_resources	= ARRAY_SIZE(resource_arm_pmu),
+	.resource	= resource_arm_pmu,
+};
+
 static int __init rk30_init_devices(void)
 {
 	rk30_init_dma();
 	rk30_init_uart();
 	rk30_init_i2c();
 	rk30_init_spim();
-#ifdef CONFIG_MTD_NAND_RK29XX
-	platform_device_register(&device_nand);
-#endif
-#ifdef CONFIG_KEYS_RK29
-	platform_device_register(&device_keys);
-#endif
-#ifdef CONFIG_USB20_OTG
-	platform_device_register(&device_usb20_otg);
-#endif
-#ifdef CONFIG_USB20_HOST
-	platform_device_register(&device_usb20_host);
-#endif
 #ifdef CONFIG_RGA_RK30
 	platform_device_register(&device_rga);
 #endif
 	platform_device_register(&device_ipp);
+
 #ifdef CONFIG_HDMI_RK30
 	platform_device_register(&device_hdmi);
 #endif
 #ifdef CONFIG_ADC_RK30
 	platform_device_register(&device_adc);
 #endif
+#ifdef CONFIG_KEYS_RK29
+	platform_device_register(&device_keys);
+#endif
+#if !defined(CONFIG_ARCH_RK3066B)
 	platform_device_register(&device_tsadc);
+#endif
 	rk30_init_sdmmc();
 #if defined(CONFIG_FIQ_DEBUGGER) && defined(DEBUG_UART_PHYS)
-	rk_serial_debug_init(DEBUG_UART_BASE, IRQ_DEBUG_UART, IRQ_UART_SIGNAL, -1);
+	//rk_serial_debug_init(DEBUG_UART_BASE, IRQ_DEBUG_UART, IRQ_UART_SIGNAL, -1);
 #endif
 	rk30_init_i2s();
 #ifdef CONFIG_RK29_VMAC
 	platform_device_register(&device_vmac);
+#endif
+#ifdef CONFIG_RK29_WATCHDOG
+	platform_device_register(&device_wdt);
+#endif
+	platform_device_register(&device_arm_pmu);
+#ifdef CONFIG_MTD_NAND_RK29XX
+	platform_device_register(&device_nand);
 #endif
 
 	return 0;

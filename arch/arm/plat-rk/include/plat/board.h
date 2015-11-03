@@ -7,11 +7,7 @@
 #include <linux/rk_screen.h>
 #include <plat/sram.h>
 
-struct adc_platform_data {
-        int ref_volt;
-        int base_chn;
-        int (*get_base_volt)(void);
-};
+
 enum {
         I2C_IDLE = 0,
         I2C_SDA_LOW,
@@ -103,6 +99,8 @@ struct rk29fb_info {
 	int (*io_deinit)(void);
 	int (*io_enable)(void);
 	int (*io_disable)(void);
+	int (*lcd_enable)(void);		//open lcd output when hdmi resume
+	int (*lcd_disable)(void);		//hdmi timeout  close lcd output
 	void (*set_screen_info)(struct rk29fb_screen *screen, struct rk29lcd_info *lcd_info );
 };
 
@@ -136,15 +134,12 @@ struct rksdmmc_gpio_board {
 
 
 struct rksdmmc_gpio_wifi_moudle {
-    struct rksdmmc_gpio   power_n;  //PMU_EN  
-    struct rksdmmc_gpio   reset_n;  //SYSRET_B, DAIRST 
-    struct rksdmmc_gpio   vddio;    //power source
+    struct rksdmmc_gpio   power_n;    
+    struct rksdmmc_gpio   reset_n;   
+    struct rksdmmc_gpio   vddio;
     struct rksdmmc_gpio   bgf_int_b;
     struct rksdmmc_gpio   wifi_int_b;
     struct rksdmmc_gpio   gps_sync;
-    struct rksdmmc_gpio   ANTSEL2;  //pin5--ANTSEL2  
-    struct rksdmmc_gpio   ANTSEL3;  //pin6--ANTSEL3 
-    struct rksdmmc_gpio   GPS_LAN;  //pin33--GPS_LAN
 };
 
 
@@ -160,14 +155,9 @@ struct rk29_sdmmc_platform_data {
 	int (*register_status_notify)(void (*callback)(int card_present, void *dev_id), void *dev_id);
 	int detect_irq;
 	int insert_card_level;
-    int power_en;
-	int power_en_level;
 	int enable_sd_wakeup;
 	int write_prt;
-	int write_prt_enalbe_level;
-	unsigned int sdio_INT_gpio; 
-	struct rksdmmc_gpio   det_pin_info;
-        int (*sd_vcc_reset)(void);
+	unsigned int sdio_INT_gpio; //add gpio INT for sdio interrupt.Modifed by xbw at 2012-08-09
 };
 
 struct gsensor_platform_data {
@@ -276,7 +266,7 @@ struct rk29_vmac_platform_data {
 	int (*rmii_power_control)(int enable);
         int(*rmii_speed_switch)(int speed);
 };
-#if defined  CONFIG_BATTERY_RK30_ADC_FAC
+//#if defined  CONFIG_BATTERY_RK30_ADC_FAC 
 /* adc battery */
 struct rk30_adc_battery_platform_data {
 	int (*io_init)(void);
@@ -303,8 +293,7 @@ struct rk30_adc_battery_platform_data {
 	int batt_low_level;
 	int charge_ok_level;
 	int charge_set_level;
-	int usb_det_level;
-	
+	int usb_det_level;	
       	int adc_channel;
 
 	int dc_det_pin_pull;    //pull up/down enable/disbale
@@ -334,7 +323,8 @@ struct rk30_adc_battery_platform_data {
 	int *board_batt_table;
 
 };
-#endif
+//#endif
+
 
 #define BOOT_MODE_NORMAL		0
 #define BOOT_MODE_FACTORY2		1
@@ -367,25 +357,5 @@ void rk28_send_wakeup_key(void);
  * return value: start address of reserved memory */
 phys_addr_t __init board_mem_reserve_add(char *name, size_t size);
 void __init board_mem_reserved(void);
-
-/*
- * For DDR frequency scaling setup. Board code something like this:
- *
- * This array _must_ be sorted in ascending frequency (without DDR_FREQ_*) order.
- * 必须按频率（不必考虑DDR_FREQ_*）递增。
- *static struct cpufreq_frequency_table dvfs_ddr_table[] = {
- *	{.frequency = 200 * 1000 + DDR_FREQ_SUSPEND,	.index = xxxx * 1000},
- *	{.frequency = 200 * 1000 + DDR_FREQ_IDLE,	.index = xxxx * 1000},
- *	{.frequency = 300 * 1000 + DDR_FREQ_VIDEO,	.index = xxxx * 1000},
- *	{.frequency = 400 * 1000 + DDR_FREQ_NORMAL,	.index = xxxx * 1000},
- *	{.frequency = CPUFREQ_TABLE_END},
- *};
- */
-enum ddr_freq_mode {
-	DDR_FREQ_NORMAL = 1,	// default
-	DDR_FREQ_VIDEO,		// when video is playing
-	DDR_FREQ_IDLE,		// when screen is idle
-	DDR_FREQ_SUSPEND,	// when early suspend
-};
 
 #endif

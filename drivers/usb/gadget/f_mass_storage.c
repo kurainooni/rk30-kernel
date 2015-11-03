@@ -307,6 +307,21 @@
 #include <linux/reboot.h>
 #include <linux/syscalls.h>
 
+static int usb_msc_connected;	/*usb charge status*/
+
+static void set_msc_connect_flag( int connected )
+{
+	printk("%s status = %d 20101216\n" , __func__, connected);
+	if( usb_msc_connected == connected )
+		return;
+	usb_msc_connected = connected;//usb mass storage is ok
+}
+
+int get_msc_connect_flag( void )
+{
+	return usb_msc_connected;
+}
+EXPORT_SYMBOL(get_msc_connect_flag);
 #endif
 
 /*------------------------------------------------------------------------*/
@@ -2375,7 +2390,7 @@ unknown_cmnd:
 		common->data_size_from_cmnd = 0;
 		sprintf(unknown, "Unknown x%02x", common->cmnd[0]);
 		reply = check_command(common, common->cmnd_size,
-				      DATA_DIR_UNKNOWN, 0xff, 0, unknown);
+				      DATA_DIR_UNKNOWN, ~0, 0, unknown);
 		if (reply == 0) {
 			common->curlun->sense_data = SS_INVALID_COMMAND;
 			reply = -EINVAL;
@@ -2660,6 +2675,8 @@ static void fsg_disable(struct usb_function *f)
 	struct fsg_dev *fsg = fsg_from_func(f);
 	fsg->common->new_fsg = NULL;
 	raise_exception(fsg->common, FSG_STATE_CONFIG_CHANGE);
+	// yk 201009
+	set_msc_connect_flag(0);
 }
 
 

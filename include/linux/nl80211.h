@@ -1218,7 +1218,6 @@ enum nl80211_attrs {
 	NL80211_ATTR_INTERFACE_COMBINATIONS,
 	NL80211_ATTR_SOFTWARE_IFTYPES,
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	NL80211_ATTR_REKEY_DATA,
 
 	NL80211_ATTR_MAX_NUM_SCHED_SCAN_SSIDS,
@@ -1238,7 +1237,6 @@ enum nl80211_attrs {
 
 	NL80211_ATTR_SCHED_SCAN_MATCH,
 	NL80211_ATTR_MAX_MATCH_SETS,
-#endif
 
 	/* add attributes here, update the policy in nl80211.c */
 
@@ -1698,7 +1696,6 @@ enum nl80211_reg_rule_attr {
 	NL80211_REG_RULE_ATTR_MAX = __NL80211_REG_RULE_ATTR_AFTER_LAST - 1
 };
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 /**
  * enum nl80211_sched_scan_match_attr - scheduled scan match attributes
  * @__NL80211_SCHED_SCAN_MATCH_ATTR_INVALID: attribute number 0 is reserved
@@ -1718,7 +1715,6 @@ enum nl80211_sched_scan_match_attr {
 	NL80211_SCHED_SCAN_MATCH_ATTR_MAX =
 		__NL80211_SCHED_SCAN_MATCH_ATTR_AFTER_LAST - 1
 };
-#endif
 
 /**
  * enum nl80211_reg_rule_flags - regulatory rule flags

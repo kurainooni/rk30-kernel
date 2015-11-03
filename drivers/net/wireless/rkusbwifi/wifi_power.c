@@ -11,8 +11,10 @@
 #include <linux/kernel.h>
 #include <linux/delay.h>
 #include <linux/jiffies.h>
-
+#include <mach/gpio.h>
+#include <mach/iomux.h>
 #include "wifi_power.h"
+
 
 /*
  * rtw_channel_plan : The initialization parameter of wifi channel,
@@ -37,20 +39,11 @@ EXPORT_SYMBOL(init_channel_plan);
  */
 struct wifi_power power_gpio = 
 {
-	//POWER_NOT_USE_GPIO, 0, 0, 0, 0, 0 
+	POWER_NOT_USE_GPIO, 0, 0, 0, 0, 0 
 
 	// RBOX
 	//POWER_USE_GPIO, POWER_GPIO_IOMUX, 
 	//GPIO5D6_SDMMC1PWREN_NAME, GPIO5H_GPIO5D6, RK29_PIN5_PD6, GPIO_HIGH 
-
-#define GPIO_WIFI_POWER       RK29_PIN6_PC0
-
-	// YIFANG M803
-	//POWER_USE_GPIO, 0, 
-	//0, 0, GPIO_WIFI_POWER, GPIO_HIGH
-	
-	//SDK
-		POWER_NOT_USE_GPIO, 0, 0, 0, 0, 0 
 };
 
 /*

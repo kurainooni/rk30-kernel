@@ -1035,20 +1035,6 @@ config OV5642_USER_DEFINED_SERIES
 	bool "OV5642 user defined init series"
 	default n
 
-config SOC_CAMERA_OV5642_INTERPOLATION
-	bool "support sensor interpolation for higher resolution"
-	depends on SOC_CAMERA_OV5642
-choice
-	prompt "OV5642 interpolation resolution"
-	depends on SOC_CAMERA_OV5642_INTERPOLATION
-	default SOC_CAMERA_OV5642_INTERPOLATION_8M
-	---help---
-		OV5642 interpolation resolution
-		
-config SOC_CAMERA_OV5642_INTERPOLATION_8M
-	bool "8 megapixel 3264x2448"
-endchoice
-
 choice
 	prompt "OV5642 Module Focus select"
 	depends on SOC_CAMERA_OV5642
@@ -1148,24 +1134,6 @@ config GC0308_USER_DEFINED_SERIES
 	bool "GC0308 user defined init series"
 	default n
 
-config SOC_CAMERA_GC0308_INTERPOLATION
-	bool "support sensor interpolation for higher resolution"
-	depends on SOC_CAMERA_GC0308
-choice
-	prompt "GC0308 interpolation resolution"
-	depends on SOC_CAMERA_GC0308_INTERPOLATION
-	default SOC_CAMERA_GC0308_INTERPOLATION_1M
-	---help---
-		GC0308 interpolation resolution
-		
-config SOC_CAMERA_GC0308_INTERPOLATION_1M
-	bool "1 megapixel 1024x768"
-config SOC_CAMERA_GC0308_INTERPOLATION_2M
-	bool "2 megapixel 1600x1200"
-config SOC_CAMERA_GC0308_INTERPOLATION_3M
-	bool "3 megapixel 2048x1536"
-endchoice
-
 config SOC_CAMERA_GC0309
 	tristate "GC0309 support for rockchip"
 	depends on SOC_CAMERA && I2C
@@ -1215,23 +1183,6 @@ config HI253_USER_DEFINED_SERIES
 	depends on SOC_CAMERA_HI253
 	bool "HI253 user defined init series"
 	default n
-
-config SOC_CAMERA_HI253_INTERPOLATION
-	bool "support sensor interpolation for higher resolution"
-	depends on SOC_CAMERA_HI253
-		
-choice
-	prompt "HI253 interpolation resolution"
-	depends on SOC_CAMERA_HI253_INTERPOLATION
-	default SOC_CAMERA_HI253_INTERPOLATION_3M
-	---help---
-		HI253 interpolation resolution
-
-config SOC_CAMERA_HI253_INTERPOLATION_3M
-	bool "3 megapixel 2048x1536"
-config SOC_CAMERA_HI253_INTERPOLATION_5M
-	bool "5 megapixel 2592x1944"	
-endchoice
 
 config SOC_CAMERA_HI704
 	tristate "HI704 support for rockchip"

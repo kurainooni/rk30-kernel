@@ -60,10 +60,10 @@ module_param(debug, int, S_IRUGO|S_IWUSR);
 #define CONFIG_SENSOR_Contrast      0
 #define CONFIG_SENSOR_Saturation    0
 #define CONFIG_SENSOR_Effect        1
-#define CONFIG_SENSOR_Scene         1
+#define CONFIG_SENSOR_Scene         0
 #define CONFIG_SENSOR_DigitalZoom   0
 #define CONFIG_SENSOR_Focus         0
-#define CONFIG_SENSOR_Exposure      0
+#define CONFIG_SENSOR_Exposure      1
 #define CONFIG_SENSOR_Flash         0
 #define CONFIG_SENSOR_Mirror        0
 #define CONFIG_SENSOR_Flip          0
@@ -475,14 +475,16 @@ static struct reginfo sensor_init_data[] =
 {0x87, 0xfa},
 
 //50Hz_8fps
+// honghaishen_test
+#if 0
 {0x88, 0x02},//ExpMax 8fps(8fps)
 {0x89, 0xbf},
 {0x8a, 0x20},
-
+#endif
 //50Hz_5fps
-//{0x88, 0x04},//ExpMax 8fps(8fps)
-//{0x89, 0x93},
-//{0x8a, 0xe0},
+{0x88, 0x04},//ExpMax 8fps(8fps)
+{0x89, 0x93},
+{0x8a, 0xe0},
 
 //60Hz_8fps
 //{0x88, 0x02},//ExpMax 8fps(8fps)
@@ -511,8 +513,8 @@ static struct reginfo sensor_init_data[] =
 {0x9e, 0x00}, //4shared Unit_10_04_06 hhzin
 {0x9f, 0xfa}, // 0x01f4 --> 0xfa
 
-{0xb1, 0x14},
-{0xb2, 0x30},
+{0xb1, 0x10},  //     14
+{0xb2, 0x2a},   //     30
 {0xb4, 0x14},
 {0xb5, 0x38},
 {0xb6, 0x26},
@@ -924,44 +926,57 @@ static struct reginfo *sensor_EffectSeqe[] = {sensor_Effect_Normal, sensor_Effec
 static  struct reginfo sensor_Exposure0[]=
 {
     //-3
+    {0x03, 0x20},//Y Target 42
+    {0x70, 0x20},//Y Target 42
+    {END_REG, END_REG},
 
 };
 
 static  struct reginfo sensor_Exposure1[]=
 {
     //-2
-
+	{0x03, 0x20},//Y Target 42
+    {0x70, 0x28},//Y Target 42
   	{END_REG, END_REG},
 };
 
 static  struct reginfo sensor_Exposure2[]=
 {
     //-0.3EV
+    {0x03, 0x20},//Y Target 42
+    {0x70, 0x30},//Y Target 42
 	{END_REG, END_REG},
 };
 
 static  struct reginfo sensor_Exposure3[]=
 {
     //default
+    {0x03, 0x20},//Y Target 42
+    {0x70, 0x38},//Y Target 42
 	{END_REG, END_REG},
 };
 
 static  struct reginfo sensor_Exposure4[]=
 {
     // 1
-
+	{0x03, 0x20},//Y Target 42
+    {0x70, 0x3a},//Y Target 42
 	{END_REG, END_REG},
 };
 
 static  struct reginfo sensor_Exposure5[]=
 {
     // 2
+    {0x03, 0x20},//Y Target 42
+    {0x70, 0x40},//Y Target 42
 	{END_REG, END_REG},
 };
 
 static  struct reginfo sensor_Exposure6[]=
 {
     // 3
+    {0x03, 0x20},//Y Target 42
+    {0x70, 0x48},//Y Target 42
 
 	{END_REG, END_REG},
 };
@@ -2365,7 +2380,7 @@ static int sensor_set_flash(struct soc_camera_device *icd, const struct v4l2_que
 {    
     if ((value >= qctrl->minimum) && (value <= qctrl->maximum)) {
         if (value == 3) {       /* ddl@rock-chips.com: torch */
-            sensor_ioctrl(icd, Sensor_Flash, Flash_Torch);   /* Flash On */
+            sensor_ioctrl(icd, Sensor_Flash, Flash_Torch_On);   /* Flash On */
         } else {
             sensor_ioctrl(icd, Sensor_Flash, Flash_Off);
         }

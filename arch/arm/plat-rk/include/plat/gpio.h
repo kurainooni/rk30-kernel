@@ -1,6 +1,55 @@
 #ifndef __PLAT_GPIO_H
 #define __PLAT_GPIO_H
 
+/*
+ * tp_int = <bank><goff><off><driving force><wake_en><irq_flags><reserve>
+ * tp_rst = <bank><goff><off><driving force><active_low><pull_mode><reserve>
+ * gpio = RKXX_PIN(bank)_P(goff)(off)
+ * e.g.  bank=2, goff=A, off=3 ==>gpio is RKXX_PIN2_PA3
+ */
+struct irq_config{
+        unsigned int off:4,  //bit[3:0]
+                     goff:4,
+                     bank:4,
+                     driving_force:4, 
+                     wake_en:4,
+                     irq_flags:4,
+                     reserve:8;
+};
+struct gpio_config{
+        unsigned int off:4, //bit[3:0]
+                     goff:4,
+                     bank:4,
+                     driving_force:4,
+                     active_low:4,
+                     pull_mode:4, 
+                     reserve:8;
+};
+struct port_config {
+        union{
+                struct irq_config irq;
+                struct gpio_config io;
+                unsigned int v;
+        };
+        int gpio;
+};
+static inline struct port_config get_port_config(unsigned int value)
+{
+        struct port_config port;
+
+        port.v = value;
+        port.gpio = PIN_BASE + port.io.bank * 32 + (port.io.goff - 0x0A) * 8 + port.io.off;
+
+        return port;
+}
+void gpio_set_iomux(int gpio);
+int port_output_init(unsigned int value, int on, char *name);
+void port_output_on(unsigned int value);
+void port_output_off(unsigned int value);
+int port_input_init(unsigned int value, char *name);
+int port_get_value(unsigned int value);
+void port_deinit(unsigned int value);
+
 typedef enum eGPIOPinLevel
 {
 	GPIO_LOW=0,

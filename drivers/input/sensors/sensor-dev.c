@@ -302,7 +302,7 @@ static int sensor_irq_init(struct i2c_client *client)
 		client->irq = irq;
 		if((sensor->pdata->type == SENSOR_TYPE_GYROSCOPE) || (sensor->pdata->type == SENSOR_TYPE_ACCEL))
 		disable_irq_nosync(client->irq);//disable irq
-		if(((sensor->pdata->type == SENSOR_TYPE_LIGHT) || (sensor->pdata->type == SENSOR_TYPE_PROXIMITY))&& (!(sensor->ops->trig & IRQF_SHARED)))	
+		if(((sensor->pdata->type == SENSOR_TYPE_LIGHT) || ((sensor->pdata->type == SENSOR_TYPE_PROXIMITY))) && (!(sensor->ops->trig & IRQF_SHARED)))	
 		disable_irq_nosync(client->irq);//disable irq
 		printk("%s:use irq=%d\n",__func__,irq);
 	}
@@ -1400,7 +1400,6 @@ static const struct i2c_device_id sensor_id[] = {
 	{"gs_kxtik", ACCEL_ID_KXTIK},
 	{"gs_lis3dh", ACCEL_ID_LIS3DH},
 	{"gs_mma7660", ACCEL_ID_MMA7660},
-	{"gs_mxc6225", ACCEL_ID_MXC6225},
 	/*compass*/
 	{"compass", COMPASS_ID_ALL},
 	{"ak8975", COMPASS_ID_AK8975},
@@ -1415,12 +1414,10 @@ static const struct i2c_device_id sensor_id[] = {
 	{"light_al3006", LIGHT_ID_AL3006},
 	{"ls_stk3171", LIGHT_ID_STK3171},
 	{"ls_isl29023", LIGHT_ID_ISL29023},
-	{"ls_ap321xx", LIGHT_ID_AP321XX},
 	/*proximity sensor*/
 	{"psensor", PROXIMITY_ID_ALL},
 	{"proximity_al3006", PROXIMITY_ID_AL3006},	
 	{"ps_stk3171", PROXIMITY_ID_STK3171},
-	{"ps_ap321xx", PROXIMITY_ID_AP321XX},
 	/*temperature*/
 	{"temperature", TEMPERATURE_ID_ALL},
 	{},

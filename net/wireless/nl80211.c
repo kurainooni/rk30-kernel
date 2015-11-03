@@ -83,13 +83,8 @@ static const struct nla_policy nl80211_policy[NL80211_ATTR_MAX+1] = {
 	[NL80211_ATTR_IFINDEX] = { .type = NLA_U32 },
 	[NL80211_ATTR_IFNAME] = { .type = NLA_NUL_STRING, .len = IFNAMSIZ-1 },
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	[NL80211_ATTR_MAC] = { .len = ETH_ALEN },
 	[NL80211_ATTR_PREV_BSSID] = { .len = ETH_ALEN },
-#else
-	[NL80211_ATTR_MAC] = { .type = NLA_BINARY, .len = ETH_ALEN },
-	[NL80211_ATTR_PREV_BSSID] = { .type = NLA_BINARY, .len = ETH_ALEN },
-#endif
 
 	[NL80211_ATTR_KEY] = { .type = NLA_NESTED, },
 	[NL80211_ATTR_KEY_DATA] = { .type = NLA_BINARY,
@@ -131,12 +126,7 @@ static const struct nla_policy nl80211_policy[NL80211_ATTR_MAX+1] = {
 	[NL80211_ATTR_MESH_CONFIG] = { .type = NLA_NESTED },
 	[NL80211_ATTR_SUPPORT_MESH_AUTH] = { .type = NLA_FLAG },
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	[NL80211_ATTR_HT_CAPABILITY] = { .len = NL80211_HT_CAPABILITY_LEN },
-#else
-	[NL80211_ATTR_HT_CAPABILITY] = { .type = NLA_BINARY,
-					 .len = NL80211_HT_CAPABILITY_LEN },
-#endif
 
 	[NL80211_ATTR_MGMT_SUBTYPE] = { .type = NLA_U8 },
 	[NL80211_ATTR_IE] = { .type = NLA_BINARY,
@@ -185,7 +175,6 @@ static const struct nla_policy nl80211_policy[NL80211_ATTR_MAX+1] = {
 	[NL80211_ATTR_WOWLAN_TRIGGERS] = { .type = NLA_NESTED },
 	[NL80211_ATTR_STA_PLINK_STATE] = { .type = NLA_U8 },
 	[NL80211_ATTR_SCHED_SCAN_INTERVAL] = { .type = NLA_U32 },
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	[NL80211_ATTR_REKEY_DATA] = { .type = NLA_NESTED },
 	[NL80211_ATTR_SCAN_SUPP_RATES] = { .type = NLA_NESTED },
 	[NL80211_ATTR_HIDDEN_SSID] = { .type = NLA_U32 },
@@ -195,7 +184,6 @@ static const struct nla_policy nl80211_policy[NL80211_ATTR_MAX+1] = {
 					 .len = IEEE80211_MAX_DATA_LEN },
 	[NL80211_ATTR_ROAM_SUPPORT] = { .type = NLA_FLAG },
 	[NL80211_ATTR_SCHED_SCAN_MATCH] = { .type = NLA_NESTED },
-#endif
 };
 
 /* policy for the key attributes */
@@ -226,13 +214,11 @@ nl80211_wowlan_policy[NUM_NL80211_WOWLAN_TRIG] = {
 	[NL80211_WOWLAN_TRIG_PKT_PATTERN] = { .type = NLA_NESTED },
 };
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 static const struct nla_policy
 nl80211_match_policy[NL80211_SCHED_SCAN_MATCH_ATTR_MAX + 1] = {
 	[NL80211_ATTR_SCHED_SCAN_MATCH_SSID] = { .type = NLA_BINARY,
 						 .len = IEEE80211_MAX_SSID_LEN },
 };
-#endif
 
 /* ifidx get helper */
 static int nl80211_get_ifidx(struct netlink_callback *cb)
@@ -711,18 +697,14 @@ static int nl80211_send_wiphy(struct sk_buff *msg, u32 pid, u32 seq, int flags,
 		    dev->wiphy.coverage_class);
 	NLA_PUT_U8(msg, NL80211_ATTR_MAX_NUM_SCAN_SSIDS,
 		   dev->wiphy.max_scan_ssids);
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	NLA_PUT_U8(msg, NL80211_ATTR_MAX_NUM_SCHED_SCAN_SSIDS,
 		   dev->wiphy.max_sched_scan_ssids);
-#endif
 	NLA_PUT_U16(msg, NL80211_ATTR_MAX_SCAN_IE_LEN,
 		    dev->wiphy.max_scan_ie_len);
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	NLA_PUT_U16(msg, NL80211_ATTR_MAX_SCHED_SCAN_IE_LEN,
 		    dev->wiphy.max_sched_scan_ie_len);
 	NLA_PUT_U8(msg, NL80211_ATTR_MAX_MATCH_SETS,
 		   dev->wiphy.max_match_sets);
-#endif
 
 	if (dev->wiphy.flags & WIPHY_FLAG_IBSS_RSN)
 		NLA_PUT_FLAG(msg, NL80211_ATTR_SUPPORT_IBSS_RSN);
@@ -1220,12 +1202,10 @@ static int nl80211_set_wiphy(struct sk_buff *skb, struct genl_info *info)
 			goto bad_res;
 		}
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		if (!netif_running(netdev)) {
 			result = -ENETDOWN;
 			goto bad_res;
 		}
-#endif
 
 		nla_for_each_nested(nl_txq_params,
 				    info->attrs[NL80211_ATTR_WIPHY_TXQ_PARAMS],
@@ -2296,9 +2276,7 @@ static int nl80211_dump_station(struct sk_buff *skb,
 	}
 
 	while (1) {
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		memset(&sinfo, 0, sizeof(sinfo));
-#endif
 		err = dev->ops->dump_station(&dev->wiphy, netdev, sta_idx,
 					     mac_addr, &sinfo);
 		if (err == -ENOENT)
@@ -3512,17 +3490,11 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 	struct net_device *dev = info->user_ptr[1];
 	struct nlattr *attr;
 	struct wiphy *wiphy;
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	int err, tmp, n_ssids = 0, n_match_sets = 0, n_channels, i;
-#else
-	int err, tmp, n_ssids = 0, n_channels, i;
-#endif
 	u32 interval;
 	enum ieee80211_band band;
 	size_t ie_len;
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	struct nlattr *tb[NL80211_SCHED_SCAN_MATCH_ATTR_MAX + 1];
-#endif
 
 	if (!(rdev->wiphy.flags & WIPHY_FLAG_SUPPORTS_SCHED_SCAN) ||
 	    !rdev->ops->sched_scan_start)
@@ -3558,7 +3530,6 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 				    tmp)
 			n_ssids++;
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	if (n_ssids > wiphy->max_sched_scan_ssids)
 		return -EINVAL;
 
@@ -3570,23 +3541,14 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 
 	if (n_match_sets > wiphy->max_match_sets)
 		return -EINVAL;
-#else
-	if (n_ssids > wiphy->max_scan_ssids)
-		return -EINVAL;
-#endif
 
 	if (info->attrs[NL80211_ATTR_IE])
 		ie_len = nla_len(info->attrs[NL80211_ATTR_IE]);
 	else
 		ie_len = 0;
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	if (ie_len > wiphy->max_sched_scan_ie_len)
 		return -EINVAL;
-#else
-	if (ie_len > wiphy->max_scan_ie_len)
-		return -EINVAL;
-#endif
 
 	mutex_lock(&rdev->sched_scan_mtx);
 
@@ -3597,9 +3559,7 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 
 	request = kzalloc(sizeof(*request)
 			+ sizeof(*request->ssids) * n_ssids
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 			+ sizeof(*request->match_sets) * n_match_sets
-#endif
 			+ sizeof(*request->channels) * n_channels
 			+ ie_len, GFP_KERNEL);
 	if (!request) {
@@ -3617,7 +3577,6 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 			request->ie = (void *)(request->channels + n_channels);
 	}
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	if (n_match_sets) {
 		if (request->ie)
 			request->match_sets = (void *)(request->ie + ie_len);
@@ -3629,7 +3588,6 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 				(void *)(request->channels + n_channels);
 	}
 	request->n_match_sets = n_match_sets;
-#endif
 
 	i = 0;
 	if (info->attrs[NL80211_ATTR_SCAN_FREQUENCIES]) {
@@ -3695,7 +3653,6 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 		}
 	}
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	i = 0;
 	if (info->attrs[NL80211_ATTR_SCHED_SCAN_MATCH]) {
 		nla_for_each_nested(attr,
@@ -3720,7 +3677,6 @@ static int nl80211_start_sched_scan(struct sk_buff *skb,
 			i++;
 		}
 	}
-#endif
 
 	if (info->attrs[NL80211_ATTR_IE]) {
 		request->ie_len = nla_len(info->attrs[NL80211_ATTR_IE]);
@@ -5566,11 +5522,7 @@ static struct genl_ops nl80211_ops[] = {
 		.doit = nl80211_get_key,
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5602,11 +5554,7 @@ static struct genl_ops nl80211_ops[] = {
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
 		.doit = nl80211_addset_beacon,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5614,11 +5562,7 @@ static struct genl_ops nl80211_ops[] = {
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
 		.doit = nl80211_addset_beacon,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5642,11 +5586,7 @@ static struct genl_ops nl80211_ops[] = {
 		.doit = nl80211_set_station,
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5662,11 +5602,7 @@ static struct genl_ops nl80211_ops[] = {
 		.doit = nl80211_del_station,
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5699,11 +5635,7 @@ static struct genl_ops nl80211_ops[] = {
 		.doit = nl80211_del_mpath,
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5711,11 +5643,7 @@ static struct genl_ops nl80211_ops[] = {
 		.doit = nl80211_set_bss,
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5741,11 +5669,7 @@ static struct genl_ops nl80211_ops[] = {
 		.doit = nl80211_get_mesh_config,
 		.policy = nl80211_policy,
 		/* can be retrieved by unprivileged users */
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5877,11 +5801,7 @@ static struct genl_ops nl80211_ops[] = {
 		.doit = nl80211_setdel_pmksa,
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5889,11 +5809,7 @@ static struct genl_ops nl80211_ops[] = {
 		.doit = nl80211_setdel_pmksa,
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5901,11 +5817,7 @@ static struct genl_ops nl80211_ops[] = {
 		.doit = nl80211_flush_pmksa,
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{
@@ -5993,11 +5905,7 @@ static struct genl_ops nl80211_ops[] = {
 		.doit = nl80211_set_wds_peer,
 		.policy = nl80211_policy,
 		.flags = GENL_ADMIN_PERM,
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
-#else
-		.internal_flags = NL80211_FLAG_NEED_NETDEV |
-#endif
 				  NL80211_FLAG_NEED_RTNL,
 	},
 	{

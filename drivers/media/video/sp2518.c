@@ -779,8 +779,8 @@ static struct reginfo sensor_vga[] =
 /* 352X288 CIF */
 static struct reginfo sensor_cif[] =
 {
-    {0x00, 0x00},
-    //{0xff,0xff}
+    {0xfd, 0x00},
+    {0xff,0xff}
 };
 
 /* 320*240 QVGA */
@@ -818,7 +818,7 @@ static  struct reginfo sensor_qvga[] =
 /* 176X144 QCIF*/
 static struct reginfo sensor_qcif[] =
 {
-    {0x00, 0x00}//,{0xff,0xff}
+    {0xfd, 0x00},{0xff,0xff}
 };
 
 static  struct reginfo sensor_ClrFmt_YUYV[]=
@@ -3068,7 +3068,7 @@ static int sensor_video_probe(struct soc_camera_device *icd,
 		ret = -ENODEV;
 		goto sensor_video_probe_err;
 	}
-	msleep(100);
+	msleep(10);
 
     /* check if it is an sensor sensor */
 	ret = sensor_read(client, SENSOR_ID_REG, &pid);

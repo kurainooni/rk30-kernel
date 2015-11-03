@@ -138,7 +138,7 @@ endchoice
 
 config RK29_VPU
 	tristate "VPU (Video Processing Unit) service driver in kernel"
-	depends on ARCH_RK29 || ARCH_RK30
+	depends on ARCH_RK29 || ARCH_RK30 || ARCH_RK2928
 	default m
 
 config RK29_LAST_LOG
@@ -159,9 +159,14 @@ config RK_EARLY_PRINTK
 config RK_DEBUG_UART
 	int "Debug UART"
 	default 1 if ARCH_RK29
-	default 2 if ARCH_RK30
+	default 2 if ARCH_RK30 || ARCH_RK2928
 	help
 	  Select a UART for debugging. -1 disable.
+
+config RK_USB_UART
+	bool "Support USB UART Bypass Function"
+	depends on ARCH_RK2928 && (RK_DEBUG_UART = 2)
+	default n
 
 config RK_CONSOLE_THREAD
 	bool "Console write by thread"
@@ -179,5 +184,15 @@ config RK_PL330_DMA
 	select PL330
 	help
 	  DMA API Driver for PL330 DMAC
+	  
+config RK_PL330_DMA_TEST
+	bool "pl330 DMA memcpy test"
+	depends on RK_PL330_DMA	  
+
+config RK_FPGA
+	bool
+
+config RK_CONFIG
+	bool
 
 endif

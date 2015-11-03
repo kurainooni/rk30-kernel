@@ -42,7 +42,9 @@
 //you can look soc-core.c the resume source.s
 #define RESUME_PROBLEM 0
 
-#ifdef CONFIG_ARCH_RK30
+#if defined(CONFIG_ARCH_RK3066B)
+#define RK610_SPK_CTRL_PIN  RK30_PIN2_PA0
+#elif defined(CONFIG_ARCH_RK30)
 #define RK610_SPK_CTRL_PIN  RK30_PIN4_PC6
 #else
 #define RK610_SPK_CTRL_PIN  RK29_PIN6_PB6
@@ -90,7 +92,7 @@ static const u16 rk610_codec_reg[] = {
 	0x0000, 0x00ff, 0x00ff, 0x00ff,  /* 28 */
 };
 
-static struct snd_soc_codec *rk610_codec_codec;
+static struct snd_soc_codec *rk610_codec_codec=NULL;
 /* codec private data */
 struct rk610_codec_priv {
 	enum snd_soc_control_type control_type;
@@ -205,8 +207,13 @@ void rk610_codec_reg_read(void)
 
 static void spk_ctrl_fun(int status)
 {
-	struct rk610_codec_priv *rk610_codec =snd_soc_codec_get_drvdata(rk610_codec_codec);
-
+	struct rk610_codec_priv *rk610_codec = NULL;
+	if(rk610_codec_codec == NULL)
+		return;
+	rk610_codec = snd_soc_codec_get_drvdata(rk610_codec_codec);
+	if(rk610_codec == NULL)
+		return;
+		
 	if(rk610_codec->spk_ctrl_io)
 	{
 		DBG("--------%s----------status = %d\n",__FUNCTION__,status);
@@ -520,7 +527,7 @@ static int rk610_codec_pcm_hw_params(struct snd_pcm_substream *substream,
 	#endif
 	rk610_codec_write(codec, ACCELCODEC_R09, iface);
 	if (coeff >= 0){
-	//    rk610_codec_write(codec, ACCELCODEC_R00, srate|coeff_div[coeff].bclk);
+	    rk610_codec_write(codec, ACCELCODEC_R00, srate|coeff_div[coeff].bclk);
 		rk610_codec_write(codec, ACCELCODEC_R0A, (coeff_div[coeff].sr << 1) | coeff_div[coeff].usb|ASC_CLKNODIV|ASC_CLK_ENABLE);
 	}
 	rk610_codec_write(codec,ACCELCODEC_R0B, gR0BReg);
@@ -688,7 +695,7 @@ void rk610_codec_reg_set(void)
     gR0AReg = ASC_NORMAL_MODE|(0x10 << 1)|ASC_CLKNODIV|ASC_CLK_DISABLE;
     //2Config audio  interface
     rk610_codec_write(codec,ACCELCODEC_R09, ASC_I2S_MODE|ASC_16BIT_MODE|ASC_NORMAL_LRCLK|ASC_LRSWAP_DISABLE|ASC_MASTER_MODE|ASC_NORMAL_BCLK);
-    rk610_codec_write(codec,ACCELCODEC_R00, ASC_HPF_ENABLE|ASC_DSM_MODE_ENABLE|ASC_SCRAMBLE_ENABLE|ASC_DITHER_ENABLE|ASC_BCLKDIV_4);
+    rk610_codec_write(codec,ACCELCODEC_R00, ASC_HPF_ENABLE|ASC_DSM_MODE_DISABLE|ASC_SCRAMBLE_DISABLE|ASC_DITHER_ENABLE|ASC_BCLKDIV_4);
     //2volume,input,output
     digital_gain = Volume_Output;
     rk610_codec_write(codec,ACCELCODEC_R05, (digital_gain >> 8) & 0xFF);
@@ -863,9 +870,6 @@ static ssize_t RK610_PROC_write(struct file *file, const char __user *buffer,
 			   unsigned long len, void *data)
 {
 	char *cookie_pot; 
-	char *p;
-	int reg;
-	int value;
 	
 	cookie_pot = (char *)vmalloc( len );
 	if (!cookie_pot) 
@@ -885,53 +889,7 @@ static ssize_t RK610_PROC_write(struct file *file, const char __user *buffer,
 		break;
 	case 'o':
 		spk_ctrl_fun(GPIO_LOW);
-		break;	
-	case 'r':
-	case 'R':
-		printk("Read reg debug\n");		
-		if(cookie_pot[1] ==':')
-		{
-			strsep(&cookie_pot,":");
-			while((p=strsep(&cookie_pot,",")))
-			{
-				reg = simple_strtol(p,NULL,16);
-				value = rk610_codec_read(rk610_codec_codec,reg);
-				printk("wm8994_read:0x%04x = 0x%04x\n",reg,value);
-			}
-			printk("\n");
-		}
-		else
-		{
-			printk("Error Read reg debug.\n");
-			printk("For example: echo 'r:22,23,24,25'>wm8994_ts\n");
-		}
-		break;
-	case 'w':
-	case 'W':
-		printk("Write reg debug\n");		
-		if(cookie_pot[1] ==':')
-		{
-			strsep(&cookie_pot,":");
-			while((p=strsep(&cookie_pot,"=")))
-			{
-				reg = simple_strtol(p,NULL,16);
-				p=strsep(&cookie_pot,",");
-				value = simple_strtol(p,NULL,16);
-				rk610_codec_write(rk610_codec_codec,reg,value);
-				printk("wm8994_write:0x%04x = 0x%04x\n",reg,value);
-			}
-			printk("\n");
-		}
-		else
-		{
-			printk("Error Write reg debug.\n");
-			printk("For example: w:22=0,23=0,24=0,25=0\n");
-		}
-		break;	
-	case 'D' :
-		printk("Dump reg\n");
-		rk610_codec_reg_read();
-		break;
+		break;		
 	}
 
 	return len;

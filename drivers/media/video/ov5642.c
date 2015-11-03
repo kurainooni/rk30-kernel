@@ -49,15 +49,8 @@ module_param(debug, int, S_IRUGO|S_IWUSR);
 #define SENSOR_ID 0x5642
 #define SENSOR_MIN_WIDTH    176
 #define SENSOR_MIN_HEIGHT   144
-#define SENSOR_MAX_WIDTH_REAL  2592
-#define SENSOR_MAX_HEIGHT_REAL  1944
-#if defined(CONFIG_SOC_CAMERA_OV5642_INTERPOLATION_8M)
-#define SENSOR_MAX_WIDTH    3264
-#define SENSOR_MAX_HEIGHT   2448
-#else
-#define SENSOR_MAX_WIDTH    SENSOR_MAX_WIDTH_REAL
-#define SENSOR_MAX_HEIGHT   SENSOR_MAX_HEIGHT_REAL
-#endif
+#define SENSOR_MAX_WIDTH    2592
+#define SENSOR_MAX_HEIGHT   1944
 #define SENSOR_INIT_WIDTH	sensor_init_width			/* Sensor pixel size for sensor_init_data array */
 #define SENSOR_INIT_HEIGHT	sensor_init_height
 #define SENSOR_INIT_WINSEQADR  sensor_init_winseq_p
@@ -77,7 +70,6 @@ module_param(debug, int, S_IRUGO|S_IWUSR);
 #define CONFIG_SENSOR_Flip          0
 #ifdef CONFIG_OV5642_AUTOFOCUS
 #define CONFIG_SENSOR_Focus         1
-#define CONFIG_SENSOR_FocusContinues          0
 #include "ov5642_af_firmware.c"
 #else
 #define CONFIG_SENSOR_Focus         0
@@ -3243,9 +3235,7 @@ static  struct v4l2_queryctrl sensor_controls[] =
         .maximum	= 1,
         .step		= 1,
         .default_value = 0,
-    },
-    #if CONFIG_SENSOR_FocusContinues
-    {
+    },{
         .id		= V4L2_CID_FOCUS_CONTINUOUS,
         .type		= V4L2_CTRL_TYPE_BOOLEAN,
         .name		= "Focus Control",
@@ -3254,7 +3244,6 @@ static  struct v4l2_queryctrl sensor_controls[] =
         .step		= 1,
         .default_value = 0,
     },
-    #endif
     #endif
 
 	#if CONFIG_SENSOR_Flash
@@ -4055,12 +4044,14 @@ static int sensor_af_workqueue_set(struct soc_camera_device *icd, enum sensor_wq
     wk = kzalloc(sizeof(struct sensor_work), GFP_KERNEL);
     if (wk) {
 	    wk->client = client;
-	    INIT_DELAYED_WORK(&wk->dwork, sensor_af_workqueue);
+	    INIT_WORK(&(wk->dwork.work), sensor_af_workqueue);
         wk->cmd = cmd;
         wk->result = WqRet_inval;
         wk->wait = wait;
         wk->var = var;
         init_waitqueue_head(&wk->done);
+        
+	    queue_delayed_work(sensor->sensor_wq,&(wk->dwork),0);
         
         /* ddl@rock-chips.com: 
         * video_lock is been locked in v4l2_ioctl function, but auto focus may slow,
@@ -4069,17 +4060,14 @@ static int sensor_af_workqueue_set(struct soc_camera_device *icd, enum sensor_wq
         * and VIDIOC_DQBUF is sched. so unlock video_lock here.
         */
         if (wait == true) {
-            queue_delayed_work(sensor->sensor_wq,&(wk->dwork),0);
             mutex_unlock(&icd->video_lock);                     
-            if (wait_event_timeout(wk->done, (wk->result != WqRet_inval), msecs_to_jiffies(5000)) == 0) {
+            if (wait_event_timeout(wk->done, (wk->result != WqRet_inval), msecs_to_jiffies(2500)) == 0) {
                 SENSOR_TR("%s %s cmd(%d) is timeout!",SENSOR_NAME_STRING(),__FUNCTION__,cmd);                        
             }
 			flush_workqueue(sensor->sensor_wq);
             ret = wk->result;
             kfree((void*)wk);
             mutex_lock(&icd->video_lock);  
-        } else {
-            queue_delayed_work(sensor->sensor_wq,&(wk->dwork),msecs_to_jiffies(10));
         }
         
     } else {
@@ -4599,8 +4587,6 @@ static bool sensor_fmt_capturechk(struct v4l2_subdev *sd, struct v4l2_mbus_frame
 		ret = true;
 	} else if ((mf->width == 2592) && (mf->height == 1944)) {
 		ret = true;
-	} else if ((mf->width == 3264) && (mf->height == 2448)) {
-		ret = true;
 	}
 
 	if (ret == true)
@@ -4740,14 +4726,6 @@ static int sensor_s_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
         set_w = 2592;
         set_h = 1944;
     }
-#if defined(CONFIG_SOC_CAMERA_OV5642_INTERPOLATION)
-    else if (((set_w <= SENSOR_MAX_WIDTH) && (set_h <= SENSOR_MAX_HEIGHT)) )
-	{
-	    winseqe_set_addr = sensor_qsxga;
-        set_w = SENSOR_MAX_WIDTH_REAL;
-	    set_h = SENSOR_MAX_HEIGHT_REAL;
-	}
-#endif     
     else
     {
         winseqe_set_addr = SENSOR_INIT_WINSEQADR;               /* ddl@rock-chips.com : Sensor output smallest size if  isn't support app  */
@@ -4836,7 +4814,7 @@ static int sensor_s_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
             #if CONFIG_SENSOR_Focus   
             if (sensor->info_priv.auto_focus != SENSOR_AF_MODE_INFINITY) { 
                 /* ddl@rock-chips.com: The af operation is not necessary, if user don't care whether in focus after preview*/
-                if (sensor_af_workqueue_set(icd, WqCmd_af_update_zone,0,false) == 0) {
+                if (sensor_af_workqueue_set(icd, WqCmd_af_update_zone,0,true) == 0) {
                     if (sensor->info_priv.auto_focus == SENSOR_AF_MODE_CONTINUOUS) {
                         sensor_af_workqueue_set(icd, WqCmd_af_continues,0,false);
             		} else if (sensor->info_priv.auto_focus == SENSOR_AF_MODE_AUTO) {
@@ -4880,15 +4858,7 @@ static int sensor_try_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
 	if (fmt == NULL) {
 		fmt = &sensor->info_priv.fmt;
         mf->code = fmt->code;
-	}
-    /* ddl@rock-chips.com : It is query max resolution only. */
-    if (mf->reserved[6] == 0xfefe5a5a) {
-        mf->height = SENSOR_MAX_HEIGHT;
-        mf->width = SENSOR_MAX_WIDTH;
-        ret = 0;
-        printk("%s(%d): query resolution\n",__FUNCTION__,__LINE__);
-        goto sensor_try_fmt_end;
-    }
+	} 
 
     if (mf->height > SENSOR_MAX_HEIGHT)
         mf->height = SENSOR_MAX_HEIGHT;
@@ -4963,13 +4933,6 @@ static int sensor_try_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
         set_w = 2592;
         set_h = 1944;
     }
-#if defined(CONFIG_SOC_CAMERA_OV5642_INTERPOLATION)
-    else if (((set_w <= SENSOR_MAX_WIDTH) && (set_h <= SENSOR_MAX_HEIGHT)) )
-	{
-        set_w = SENSOR_MAX_WIDTH_REAL;
-	    set_h = SENSOR_MAX_HEIGHT_REAL;
-	}
-#endif    
     else
     {
         set_w = SENSOR_INIT_WIDTH;
@@ -4980,7 +4943,7 @@ static int sensor_try_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
     mf->height = set_h;
     
     mf->colorspace = fmt->colorspace;
-sensor_try_fmt_end:    
+    
     return ret;
 }
 
@@ -5709,17 +5672,14 @@ static int sensor_s_ext_control(struct soc_camera_device *icd, struct v4l2_ext_c
             }
 		case V4L2_CID_FOCUS_AUTO:
 			{
-				if (ext_ctrl->value) {
-                    if ((ext_ctrl->value==1) || (SENSOR_AF_MODE_AUTO == sensor->info_priv.auto_focus)) {
-    					if (sensor_set_focus_mode(icd, qctrl,SENSOR_AF_MODE_AUTO) != 0) {
-    						if(0 == (sensor->info_priv.funmodule_state & SENSOR_AF_IS_OK)) {
-    							sensor->info_priv.auto_focus = SENSOR_AF_MODE_AUTO;
-    						}
-    						return -EINVAL;
-    					}
-                    }
-                    if (ext_ctrl->value == 1)
-					    sensor->info_priv.auto_focus = SENSOR_AF_MODE_AUTO;
+				if (ext_ctrl->value == 1) {
+					if (sensor_set_focus_mode(icd, qctrl,SENSOR_AF_MODE_AUTO) != 0) {
+						if(0 == (sensor->info_priv.funmodule_state & SENSOR_AF_IS_OK)) {
+							sensor->info_priv.auto_focus = SENSOR_AF_MODE_AUTO;
+						}
+						return -EINVAL;
+					}
+					sensor->info_priv.auto_focus = SENSOR_AF_MODE_AUTO;
 				} else if (SENSOR_AF_MODE_AUTO == sensor->info_priv.auto_focus){
 					if (ext_ctrl->value == 0)
 						sensor->info_priv.auto_focus = SENSOR_AF_MODE_CLOSE;

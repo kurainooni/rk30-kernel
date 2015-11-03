@@ -467,12 +467,19 @@ static int rockchip_pcm_mmap(struct snd_pcm_substream *substream,
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	DBG("Enter::%s----%d\n",__FUNCTION__,__LINE__);
+   DBG("Enter::%s----%d\n",__FUNCTION__,__LINE__);
 
+#ifdef CONFIG_RK_SRAM_DMA
+	vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
+        return remap_pfn_range(vma, vma->vm_start,
+		       substream->dma_buffer.addr >> PAGE_SHIFT,
+		       vma->vm_end - vma->vm_start, vma->vm_page_prot);
+#else
 	return dma_mmap_writecombine(substream->pcm->card->dev, vma,
 				     runtime->dma_area,
 				     runtime->dma_addr,
 				     runtime->dma_bytes);
+#endif
 }
 
 static struct snd_pcm_ops rockchip_pcm_ops = {
@@ -487,7 +494,8 @@ static struct snd_pcm_ops rockchip_pcm_ops = {
 	.mmap		= rockchip_pcm_mmap,
 };
 
-#ifdef CONFIG_ARCH_RK30
+#if defined(CONFIG_ARCH_RK3066B)
+#elif defined(CONFIG_ARCH_RK30)
 #define SRAM_DMA_PHYS_PLAYBACK	(dma_addr_t)(RK30_IMEM_PHYS + 16*1024)
 #define SRAM_DMA_START_PLAYBACK	(RK30_IMEM_NONCACHED + 16*1024)
 #define SRAM_DMA_PHYS_CAPTURE 	(dma_addr_t)(SRAM_DMA_PHYS_PLAYBACK + 24*1024)

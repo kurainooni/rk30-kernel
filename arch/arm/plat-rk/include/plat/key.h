@@ -17,6 +17,7 @@ struct rk29_keys_button {
 	int active_low;
 	char *desc;
 	int wakeup;	
+	int hall_key;
 };
 
 

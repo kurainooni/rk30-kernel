@@ -49,23 +49,8 @@ module_param(debug, int, S_IRUGO|S_IWUSR);
 #define SENSOR_ID 0x9b
 #define SENSOR_MIN_WIDTH    640//176
 #define SENSOR_MIN_HEIGHT   480//144
-#define SENSOR_MAX_WIDTH_REAL   640
-#define SENSOR_MAX_HEIGHT_REAL   480
-
-#if defined(CONFIG_SOC_CAMERA_GC0308_INTERPOLATION_5M)
-	#define SENSOR_MAX_WIDTH    2592
-	#define SENSOR_MAX_HEIGHT   1944
-#elif defined(CONFIG_SOC_CAMERA_GC0308_INTERPOLATION_3M)
-	#define SENSOR_MAX_WIDTH    2048
-	#define SENSOR_MAX_HEIGHT   1536
-#elif defined(CONFIG_SOC_CAMERA_GC0308_INTERPOLATION_2M)
-	#define SENSOR_MAX_WIDTH    1600
-	#define SENSOR_MAX_HEIGHT   1200
-#else
-	#define SENSOR_MAX_WIDTH    SENSOR_MAX_WIDTH_REAL
-	#define SENSOR_MAX_HEIGHT   SENSOR_MAX_HEIGHT_REAL
-#endif
-
+#define SENSOR_MAX_WIDTH    640
+#define SENSOR_MAX_HEIGHT   480
 #define SENSOR_INIT_WIDTH	640			/* Sensor pixel size for sensor_init_data array */
 #define SENSOR_INIT_HEIGHT  480
 #define SENSOR_INIT_WINSEQADR sensor_vga
@@ -76,10 +61,10 @@ module_param(debug, int, S_IRUGO|S_IWUSR);
 #define CONFIG_SENSOR_Contrast      0
 #define CONFIG_SENSOR_Saturation    0
 #define CONFIG_SENSOR_Effect        1
-#define CONFIG_SENSOR_Scene         1
+#define CONFIG_SENSOR_Scene         0
 #define CONFIG_SENSOR_DigitalZoom   0
 #define CONFIG_SENSOR_Focus         0
-#define CONFIG_SENSOR_Exposure      0
+#define CONFIG_SENSOR_Exposure      1
 #define CONFIG_SENSOR_Flash         1
 #define CONFIG_SENSOR_Mirror        0
 #define CONFIG_SENSOR_Flip          0
@@ -687,10 +672,10 @@ static  struct reginfo sensor_WhiteB_TungstenLamp2[]=
 	{0x22, 0x55},   // Disable AWB 
 	{0x5a, 0x40},
 	{0x5b, 0x42}, 
-	{0x5c, 0x50},
+	{0x5c, 0x4a},
     {0x00, 0x00}
 };
-static struct reginfo *sensor_WhiteBalanceSeqe[] = {sensor_WhiteB_Auto, sensor_WhiteB_TungstenLamp1,sensor_WhiteB_TungstenLamp2,
+static struct reginfo *sensor_WhiteBalanceSeqe[] = {sensor_WhiteB_Auto, sensor_WhiteB_TungstenLamp2,sensor_WhiteB_TungstenLamp1,
     sensor_WhiteB_ClearDay, sensor_WhiteB_Cloudy,NULL,
 };
 #endif
@@ -1806,7 +1791,6 @@ static int sensor_s_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
 
     set_w = mf->width;
     set_h = mf->height;
-    printk( "sensor_s_fmt mf->width = %d, mf->height = %d\n",mf->width, mf->height  );
 
 	if (((set_w <= 176) && (set_h <= 144)) && sensor_qcif[0].reg)
 	{
@@ -1844,15 +1828,6 @@ static int sensor_s_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
         set_w = 1280;
         set_h = 1024;
     }
-#if defined(CONFIG_SOC_CAMERA_GC0308_INTERPOLATION)
-    else if (((set_w <= SENSOR_MAX_WIDTH) && (set_h <= SENSOR_MAX_HEIGHT)) )
-	{
-	    winseqe_set_addr = sensor_vga;
-	    set_w = SENSOR_MAX_WIDTH_REAL;
-	    set_h = SENSOR_MAX_HEIGHT_REAL;
-	}
-#endif
-
     else
     {
         winseqe_set_addr = SENSOR_INIT_WINSEQADR;               /* ddl@rock-chips.com : Sensor output smallest size if  isn't support app  */
@@ -1943,14 +1918,6 @@ static int sensor_try_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
         mf->code = fmt->code;
 	} 
 
-    /* ddl@rock-chips.com : It is query max resolution only. */
-    if (mf->reserved[6] == 0xfefe5a5a) {
-        mf->height = SENSOR_MAX_HEIGHT;
-        mf->width = SENSOR_MAX_WIDTH;
-        ret = 0;
-        goto sensor_try_fmt_end;
-    }
-
     if (mf->height > SENSOR_MAX_HEIGHT)
         mf->height = SENSOR_MAX_HEIGHT;
     else if (mf->height < SENSOR_MIN_HEIGHT)
@@ -1994,14 +1961,6 @@ static int sensor_try_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
         set_w = 1280;
         set_h = 1024;
     }
-#if defined(CONFIG_SOC_CAMERA_GC0308_INTERPOLATION)
-    else if (((set_w <= SENSOR_MAX_WIDTH) && (set_h <= SENSOR_MAX_HEIGHT)) )
-	{
-	    set_w = SENSOR_MAX_WIDTH_REAL;
-	    set_h = SENSOR_MAX_HEIGHT_REAL;
-	}
-#endif
-
     else
     {
         set_w = SENSOR_INIT_WIDTH;
@@ -2010,9 +1969,9 @@ static int sensor_try_fmt(struct v4l2_subdev *sd, struct v4l2_mbus_framefmt *mf)
 
     mf->width = set_w;
     mf->height = set_h; 
-    printk( "sensor_try_fmt mf->width = %d, mf->height = %d\n",mf->width, mf->height  );
+    
     mf->colorspace = fmt->colorspace;
-sensor_try_fmt_end:    
+    
     return ret;
 }
 
@@ -2287,7 +2246,7 @@ static int sensor_set_flash(struct soc_camera_device *icd, const struct v4l2_que
 {    
     if ((value >= qctrl->minimum) && (value <= qctrl->maximum)) {
         if (value == 3) {       /* ddl@rock-chips.com: torch */
-            sensor_ioctrl(icd, Sensor_Flash, Flash_Torch);   /* Flash On */
+            sensor_ioctrl(icd, Sensor_Flash, Flash_Torch_On);   /* Flash On */
         } else {
             sensor_ioctrl(icd, Sensor_Flash, Flash_Off);
         }

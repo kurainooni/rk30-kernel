@@ -249,10 +249,7 @@ static int rk30_load_screen(struct rk_lcdc_device_driver *dev_drv, bool initscre
     	{
     		screen->init();
     	}
-	if(screen->sscreen_set)
-	{
-		screen->sscreen_set(screen,!initscreen);
-	}
+	
 	printk("%s for lcdc%d ok!\n",__func__,lcdc_dev->id);
 	return 0;
 }
@@ -735,7 +732,7 @@ int rk30_lcdc_pan_display(struct rk_lcdc_device_driver * dev_drv,int layer_id)
 		 
 	}
 
-	//if(dev_drv->num_buf < 3) //3buffer ,no need to  wait for sysn
+	if(dev_drv->num_buf < 3) //3buffer ,no need to  wait for sysn
 	{
 		spin_lock_irqsave(&dev_drv->cpl_lock,flags);
 		init_completion(&dev_drv->frame_done);
@@ -1031,7 +1028,6 @@ static int rk30_lcdc_fps_mgr(struct rk_lcdc_device_driver *dev_drv,int fps,bool 
 	return fps;
 }
 
-
 static int rk30_fb_layer_remap(struct rk_lcdc_device_driver *dev_drv,
 	enum fb_win_map_order order)
 {
@@ -1051,6 +1047,26 @@ static int rk30_fb_layer_remap(struct rk_lcdc_device_driver *dev_drv,
        return 0;
 }
 
+static int rk30_fb_get_layer(struct rk_lcdc_device_driver *dev_drv,const char *id)
+{
+       int layer_id = 0;
+       mutex_lock(&dev_drv->fb_win_id_mutex);
+       if(!strcmp(id,"fb0")||!strcmp(id,"fb3"))
+       {
+               layer_id = dev_drv->fb0_win_id;
+       }
+       else if(!strcmp(id,"fb1")||!strcmp(id,"fb4"))
+       {
+               layer_id = dev_drv->fb1_win_id;
+       }
+       else if(!strcmp(id,"fb2")||!strcmp(id,"fb5"))
+       {
+               layer_id = dev_drv->fb2_win_id;
+       }
+       mutex_unlock(&dev_drv->fb_win_id_mutex);
+
+       return  layer_id;
+}
 
 static int rk30_read_dsp_lut(struct rk_lcdc_device_driver *dev_drv,int *lut)
 {
@@ -1088,28 +1104,6 @@ static int rk30_set_dsp_lut(struct rk_lcdc_device_driver *dev_drv,int *lut)
 	LCDC_REG_CFG_DONE();
 
 	return ret;
-}
-       
-	
-static int rk30_fb_get_layer(struct rk_lcdc_device_driver *dev_drv,const char *id)
-{	
-	int layer_id;
-	mutex_lock(&dev_drv->fb_win_id_mutex);
-	if(!strcmp(id,"fb0")||!strcmp(id,"fb3"))
-	{
-		layer_id = dev_drv->fb0_win_id;
-	}
-	else if(!strcmp(id,"fb1")||!strcmp(id,"fb4"))
-	{
-		layer_id = dev_drv->fb1_win_id;
-	}
-	else if(!strcmp(id,"fb2")||!strcmp(id,"fb5"))
-	{
-		layer_id = dev_drv->fb2_win_id;
-	}
-	mutex_unlock(&dev_drv->fb_win_id_mutex);
-
-       return  layer_id;
 }
 int rk30_lcdc_early_suspend(struct rk_lcdc_device_driver *dev_drv)
 {
@@ -1189,7 +1183,7 @@ static irqreturn_t rk30_lcdc_isr(int irq, void *dev_id)
 	LCDC_REG_CFG_DONE();
 	//LcdMskReg(lcdc_dev, INT_STATUS, m_LINE_FLAG_INT_CLEAR, v_LINE_FLAG_INT_CLEAR(1));
  
-	//if(lcdc_dev->driver.num_buf < 3)  //three buffer ,no need to wait for sync
+	if(lcdc_dev->driver.num_buf < 3)  //three buffer ,no need to wait for sync
 	{
 		spin_lock(&(lcdc_dev->driver.cpl_lock));
 		complete(&(lcdc_dev->driver.frame_done));
@@ -1233,10 +1227,10 @@ static struct rk_lcdc_device_driver lcdc_driver = {
 	.ovl_mgr		= rk30_lcdc_ovl_mgr,
 	.get_disp_info		= rk30_lcdc_get_disp_info,
 	.fps_mgr		= rk30_lcdc_fps_mgr,
-	.set_dsp_lut            = rk30_set_dsp_lut,
-	.read_dsp_lut            = rk30_read_dsp_lut,
 	.fb_get_layer           = rk30_fb_get_layer,
 	.fb_layer_remap         = rk30_fb_layer_remap,
+	.set_dsp_lut            = rk30_set_dsp_lut,
+	.read_dsp_lut           = rk30_read_dsp_lut,
 };
 #ifdef CONFIG_PM
 static int rk30_lcdc_suspend(struct platform_device *pdev, pm_message_t state)
@@ -1258,7 +1252,6 @@ static int __devinit rk30_lcdc_probe (struct platform_device *pdev)
 {
 	struct rk30_lcdc_device *lcdc_dev=NULL;
 	rk_screen *screen;
-	rk_screen *screen1;
 	struct rk29fb_info *screen_ctr_info;
 	struct resource *res = NULL;
 	struct resource *mem;
@@ -1281,26 +1274,6 @@ static int __devinit rk30_lcdc_probe (struct platform_device *pdev)
         	ret =  -ENOMEM;
 		goto err0;
 	}
-	else
-	{
-		lcdc_dev->screen = screen;
-	}
-	screen->lcdc_id = lcdc_dev->id;
-	screen->screen_id = 0;
-
-#if defined(CONFIG_ONE_LCDC_DUAL_OUTPUT_INF)&& defined(CONFIG_RK610_LVDS)
-	screen1 =  kzalloc(sizeof(rk_screen), GFP_KERNEL);
-	if(!screen1)
-	{
-		dev_err(&pdev->dev, ">>rk3066b lcdc screen1 kmalloc fail!");
-        	ret =  -ENOMEM;
-		goto err0;
-	}
-	screen1->lcdc_id = 1;
-	screen1->screen_id = 1;
-	printk("use lcdc%d and rk610 implemention dual display!\n",lcdc_dev->id);
-	
-#endif
 	/****************get lcdc0 reg  *************************/
 	res = platform_get_resource(pdev, IORESOURCE_MEM,0);
 	if (res == NULL)
@@ -1331,9 +1304,6 @@ static int __devinit rk30_lcdc_probe (struct platform_device *pdev)
 	printk("lcdc%d:reg_phy_base = 0x%08x,reg_vir_base:0x%p\n",pdev->id,lcdc_dev->reg_phy_base, lcdc_dev->preg);
 	lcdc_dev->driver.dev=&pdev->dev;
 	lcdc_dev->driver.screen0 = screen;
-#if defined(CONFIG_ONE_LCDC_DUAL_OUTPUT_INF)&& defined(CONFIG_RK610_LVDS)
-	lcdc_dev->driver.screen1 = screen1;
-#endif
 	lcdc_dev->driver.cur_screen = screen;
 	lcdc_dev->driver.screen_ctr_info = screen_ctr_info;
 	spin_lock_init(&lcdc_dev->reg_lock);

@@ -91,22 +91,6 @@ static ssize_t show_fb_state(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%s\n",state?"enabled":"disabled");
 	
 }
-
-static ssize_t show_dual_mode(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	int mode=0;
-#if defined(CONFIG_ONE_LCDC_DUAL_OUTPUT_INF)
-	mode = 1;
-#elif defined(CONFIG_DUAL_LCDC_DUAL_DISP_IN_KERNEL)
-	mode = 2;
-#else
-	mode = 0;
-#endif
-	return snprintf(buf, PAGE_SIZE, "%d\n",mode);
-	
-}
-
 static ssize_t set_fb_state(struct device *dev,struct device_attribute *attr,
 	const char *buf, size_t count)
 {
@@ -204,6 +188,54 @@ static ssize_t set_fps(struct device *dev,struct device_attribute *attr,
 	return count;
 }
 
+static ssize_t show_fb_win_map(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int ret;
+	struct fb_info *fbi = dev_get_drvdata(dev);
+	struct rk_lcdc_device_driver * dev_drv = 
+		(struct rk_lcdc_device_driver * )fbi->par;
+
+	mutex_lock(&dev_drv->fb_win_id_mutex);
+	ret = snprintf(buf, PAGE_SIZE,"fb0:win%d\nfb1:win%d\nfb2:win%d\n",dev_drv->fb0_win_id,dev_drv->fb1_win_id,
+		dev_drv->fb2_win_id);
+	mutex_unlock(&dev_drv->fb_win_id_mutex);
+
+	return ret;
+	
+}
+
+static ssize_t set_fb_win_map(struct device *dev,struct device_attribute *attr,
+	const char *buf, size_t count)
+{
+	struct fb_info *fbi = dev_get_drvdata(dev);
+	struct rk_lcdc_device_driver * dev_drv = 
+		(struct rk_lcdc_device_driver * )fbi->par;
+	int order;
+	int ret;
+	ret = kstrtoint(buf, 0, &order);
+	if((order != FB0_WIN2_FB1_WIN1_FB2_WIN0) && (order != FB0_WIN1_FB1_WIN2_FB2_WIN0 ) &&
+	   (order != FB0_WIN2_FB1_WIN0_FB2_WIN1) && (order != FB0_WIN0_FB1_WIN2_FB2_WIN1 ) &&
+	   (order != FB0_WIN0_FB1_WIN1_FB2_WIN2) && (order != FB0_WIN1_FB1_WIN0_FB2_WIN2 ))
+	{
+		printk(KERN_ERR "un support map\nyou can use the following order: \
+			\n201:\nfb0-win1\nfb1-win0\nfb2-win2\n			   \
+			\n210:\nfb0-win0\nfb1-win1\nfb2-win2\n			  \
+			\n120:\nfb0-win0\nfb1-win2\nfb2-win1\n			  \
+			\n102:\nfb0-win2\nfb1-win0\nfb2-win1\n			   \
+			\n021:\nfb0-win1\nfb1-win2\nfb2-win0\n			   \
+			\n012:\nfb0-win2\nfb1-win1\nfb2-win0\n");
+		return count;
+	}
+	else
+	{
+		dev_drv->fb_layer_remap(dev_drv,order);
+	}
+
+	return count;
+	
+	
+}
 
 static ssize_t show_dsp_lut(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -257,66 +289,17 @@ static ssize_t set_dsp_lut(struct device *dev,struct device_attribute *attr,
 	return count;
 	
 }
-static ssize_t show_fb_win_map(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	int ret;
-	struct fb_info *fbi = dev_get_drvdata(dev);
-	struct rk_lcdc_device_driver * dev_drv = 
-		(struct rk_lcdc_device_driver * )fbi->par;
-
-	mutex_lock(&dev_drv->fb_win_id_mutex);
-	ret = snprintf(buf, PAGE_SIZE,"fb0:win%d\nfb1:win%d\nfb2:win%d\n",dev_drv->fb0_win_id,dev_drv->fb1_win_id,
-		dev_drv->fb2_win_id);
-	mutex_unlock(&dev_drv->fb_win_id_mutex);
-
-	return ret;
-	
-}
-
-static ssize_t set_fb_win_map(struct device *dev,struct device_attribute *attr,
-	const char *buf, size_t count)
-{
-	struct fb_info *fbi = dev_get_drvdata(dev);
-	struct rk_lcdc_device_driver * dev_drv = 
-		(struct rk_lcdc_device_driver * )fbi->par;
-	int order;
-	int ret;
-	ret = kstrtoint(buf, 0, &order);
-	if((order != FB0_WIN2_FB1_WIN1_FB2_WIN0) && (order != FB0_WIN1_FB1_WIN2_FB2_WIN0 ) &&
-	   (order != FB0_WIN2_FB1_WIN0_FB2_WIN1) && (order != FB0_WIN0_FB1_WIN2_FB2_WIN1 ) &&
-	   (order != FB0_WIN0_FB1_WIN1_FB2_WIN2) && (order != FB0_WIN1_FB1_WIN0_FB2_WIN2 ))
-	{
-		printk(KERN_ERR "un support map\nyou can use the following order: \
-			\n201:\nfb0-win1\nfb1-win0\nfb2-win2\n			   \
-			\n210:\nfb0-win0\nfb1-win1\nfb2-win2\n			  \
-			\n120:\nfb0-win0\nfb1-win2\nfb2-win1\n			  \
-			\n102:\nfb0-win2\nfb1-win0\nfb2-win1\n			   \
-			\n021:\nfb0-win1\nfb1-win2\nfb2-win0\n			   \
-			\n012:\nfb0-win2\nfb1-win1\nfb2-win0\n");
-		return count;
-	}
-	else
-	{
-		dev_drv->fb_layer_remap(dev_drv,order);
-	}
-
-	return count;
-	
-	
-}
 
 static struct device_attribute rkfb_attrs[] = {
 	__ATTR(phys_addr, S_IRUGO, show_phys, NULL),
 	__ATTR(virt_addr, S_IRUGO, show_virt, NULL),
 	__ATTR(disp_info, S_IRUGO, show_disp_info, NULL),
 	__ATTR(screen_info, S_IRUGO, show_screen_info, NULL),
-	__ATTR(dual_mode, S_IRUGO, show_dual_mode, NULL),
 	__ATTR(enable, S_IRUGO | S_IWUSR, show_fb_state, set_fb_state),
 	__ATTR(overlay, S_IRUGO | S_IWUSR, show_overlay, set_overlay),
 	__ATTR(fps, S_IRUGO | S_IWUSR, show_fps, set_fps),
-	__ATTR(dsp_lut, S_IRUGO | S_IWUSR, show_dsp_lut, set_dsp_lut),
 	__ATTR(map, S_IRUGO | S_IWUSR, show_fb_win_map, set_fb_win_map),
+	__ATTR(dsp_lut, S_IRUGO | S_IWUSR, show_dsp_lut, set_dsp_lut),
 };
 
 int rkfb_create_sysfs(struct fb_info *fbi)

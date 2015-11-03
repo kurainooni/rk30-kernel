@@ -719,11 +719,7 @@ void cfg80211_upload_connect_keys(struct wireless_dev *wdev)
 	wdev->connect_keys = NULL;
 }
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 void cfg80211_process_wdev_events(struct wireless_dev *wdev)
-#else
-static void cfg80211_process_wdev_events(struct wireless_dev *wdev)
-#endif
 {
 	struct cfg80211_event *ev;
 	unsigned long flags;
@@ -811,11 +807,7 @@ int cfg80211_change_iface(struct cfg80211_registered_device *rdev,
 	     ntype == NL80211_IFTYPE_P2P_CLIENT))
 		return -EBUSY;
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	if (ntype != otype && netif_running(dev)) {
-#else
-	if (ntype != otype) {
-#endif
 		err = cfg80211_can_change_interface(rdev, dev->ieee80211_ptr,
 						    ntype);
 		if (err)
@@ -945,9 +937,7 @@ int cfg80211_can_change_interface(struct cfg80211_registered_device *rdev,
 				  enum nl80211_iftype iftype)
 {
 	struct wireless_dev *wdev_iter;
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	u32 used_iftypes = BIT(iftype);
-#endif
 	int num[NUM_NL80211_IFTYPES];
 	int total = 1;
 	int i, j;
@@ -981,23 +971,17 @@ int cfg80211_can_change_interface(struct cfg80211_registered_device *rdev,
 
 		num[wdev_iter->iftype]++;
 		total++;
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		used_iftypes |= BIT(wdev_iter->iftype);
-#endif
 	}
 	mutex_unlock(&rdev->devlist_mtx);
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 	if (total == 1)
 		return 0;
-#endif
 
 	for (i = 0; i < rdev->wiphy.n_iface_combinations; i++) {
 		const struct ieee80211_iface_combination *c;
 		struct ieee80211_iface_limit *limits;
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		u32 all_iftypes = 0;
-#endif
 
 		c = &rdev->wiphy.iface_combinations[i];
 
@@ -1012,12 +996,8 @@ int cfg80211_can_change_interface(struct cfg80211_registered_device *rdev,
 			if (rdev->wiphy.software_iftypes & BIT(iftype))
 				continue;
 			for (j = 0; j < c->n_limits; j++) {
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 				all_iftypes |= limits[j].types;
 				if (!(limits[j].types & BIT(iftype)))
-#else
-				if (!(limits[j].types & iftype))
-#endif
 					continue;
 				if (limits[j].max < num[iftype])
 					goto cont;
@@ -1025,7 +1005,6 @@ int cfg80211_can_change_interface(struct cfg80211_registered_device *rdev,
 			}
 		}
 
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		/*
 		 * Finally check that all iftypes that we're currently
 		 * using are actually part of this combination. If they
@@ -1039,7 +1018,6 @@ int cfg80211_can_change_interface(struct cfg80211_registered_device *rdev,
 		 * This combination covered all interface types and
 		 * supported the requested numbers, so we're good.
 		 */
-#endif
 		kfree(limits);
 		return 0;
  cont:

@@ -60,10 +60,10 @@ module_param(debug, int, S_IRUGO|S_IWUSR);
 #define CONFIG_SENSOR_Contrast      0
 #define CONFIG_SENSOR_Saturation    0
 #define CONFIG_SENSOR_Effect        1
-#define CONFIG_SENSOR_Scene         1
+#define CONFIG_SENSOR_Scene         0
 #define CONFIG_SENSOR_DigitalZoom   0
 #define CONFIG_SENSOR_Focus         0
-#define CONFIG_SENSOR_Exposure      0
+#define CONFIG_SENSOR_Exposure      1
 #define CONFIG_SENSOR_Flash         1
 #define CONFIG_SENSOR_Mirror        0
 #define CONFIG_SENSOR_Flip          0
@@ -1273,47 +1273,71 @@ static  struct reginfo sensor_ClrFmt_UYVY[]=
 #if CONFIG_SENSOR_WhiteBalance
 static  struct reginfo sensor_WhiteB_Auto[]=
 {
-    {0x3306, 0x00},  //AWB auto, bit[1]:0,auto
+     {0x031a , 0x81},
+		{0x0320 , 0x24},
+		{0x0321 , 0x14},
+		{0x0322 , 0x1a},
+		{0x0323 , 0x24},
+		{0x0441 , 0x4B},
+		{0x0442 , 0x00},
+		{0x0443 , 0x00},
+		{0x0444 , 0x31},
     {0x0000, 0x00}
 };
 /* Cloudy Colour Temperature : 6500K - 8000K  */
 static  struct reginfo sensor_WhiteB_Cloudy[]=
 {
-    {0x3306, 0x82},
-    {0x3337, 0x68},
-    {0x3338, 0x40},
-    {0x3339, 0x4e},
+     {0x0320 , 0x02},
+		{0x0321 , 0x02},
+		{0x0322 , 0x02},
+		{0x0323 , 0x02},
+		{0x0441 , 0x80},
+		{0x0442 , 0x00},
+		{0x0443 , 0x00},
+		{0x0444 , 0x0D},	
     {0x0000, 0x00}
 };
 /* ClearDay Colour Temperature : 5000K - 6500K  */
 static  struct reginfo sensor_WhiteB_ClearDay[]=
 {
-    //Sunny
-    {0x3306, 0x02}, //AWB off
-    {0x3337, 0x5e},
-    {0x3338, 0x40},
-    {0x3339, 0x46},
+     //Sunny
+   {0x0320 , 0x02},
+		{0x0321 , 0x02},
+		{0x0322 , 0x02},
+		{0x0323 , 0x02},
+		{0x0441 , 0x60},
+		{0x0442 , 0x00},
+		{0x0443 , 0x00},
+		{0x0444 , 0x14},
     {0x0000, 0x00}
 };
 /* Office Colour Temperature : 3500K - 5000K  */
 static  struct reginfo sensor_WhiteB_TungstenLamp1[]=
 {
-    //Office
-    {0x3306, 0x02},
-    {0x3337, 0x52},
-    {0x3338, 0x40},
-    {0x3339, 0x58},
+     //Office
+  {0x0320 , 0x02},
+		{0x0321 , 0x02},
+		{0x0322 , 0x02},
+		{0x0323 , 0x02},
+		{0x0441 , 0x50},
+		{0x0442 , 0x00},
+		{0x0443 , 0x00},
+		{0x0444 , 0x30},
     {0x0000, 0x00}
 
 };
 /* Home Colour Temperature : 2500K - 3500K  */
 static  struct reginfo sensor_WhiteB_TungstenLamp2[]=
 {
-    //Home
-    {0x3306, 0x02},
-    {0x3337, 0x44},
-    {0x3338, 0x40},
-    {0x3339, 0x70},
+       //Home
+   {0x0320 , 0x02},
+		{0x0321 , 0x02},
+		{0x0322 , 0x02},
+		{0x0323 , 0x02},
+		{0x0441 , 0x0B},
+		{0x0442 , 0x00},
+		{0x0443 , 0x00},
+		{0x0444 , 0x5E},
     {0x0000, 0x00}
 };
 static struct reginfo *sensor_WhiteBalanceSeqe[] = {sensor_WhiteB_Auto, sensor_WhiteB_TungstenLamp1,sensor_WhiteB_TungstenLamp2,
@@ -1438,71 +1462,71 @@ static struct reginfo *sensor_EffectSeqe[] = {sensor_Effect_Normal, sensor_Effec
 #if CONFIG_SENSOR_Exposure
 static  struct reginfo sensor_Exposure0[]=
 {
-    //-3
-    {0x3047, 0x05},
-    {0x3018, 0x40},
-    {0x3019, 0x30},
-    {0x301a, 0x71},
+   //-3
+    {0x0300, 0x81},
+    {0x0301, 0x60},
+        {0x0201, 0xc0},
+
     {0x0000, 0x00}
 };
 
 static  struct reginfo sensor_Exposure1[]=
 {
-    //-2
-    {0x3047, 0x05},
-    {0x3018, 0x5a},
-    {0x3019, 0x4a},
-    {0x301a, 0xc2},
+     //-2
+    {0x0300, 0x81},
+    {0x0301, 0x70},
+        {0x0201, 0xe0},
+
     {0x0000, 0x00}
 };
 
 static  struct reginfo sensor_Exposure2[]=
 {
     //-0.3EV
-    {0x3047, 0x05},
-    {0x3018, 0x6a},
-    {0x3019, 0x5a},
-    {0x301a, 0xd4},
+    {0x0300, 0x81},
+    {0x0301, 0x78},
+        {0x0201, 0xf0},
+
     {0x0000, 0x00}
 };
 
 static  struct reginfo sensor_Exposure3[]=
 {
-    //default
-    {0x3047, 0x05},
-    {0x3018, 0x78},
-    {0x3019, 0x68},
-    {0x301a, 0xd4},
+     //default
+    {0x0300, 0x81},
+    {0x0301, 0x80},
+       {0x0201, 0x00},
+
     {0x0000, 0x00}
 };
 
 static  struct reginfo sensor_Exposure4[]=
 {
-    // 1
-    {0x3047, 0x05},
-    {0x3018, 0x88},
-    {0x3019, 0x78},
-    {0x301a, 0xd5},
+   // 1
+    {0x0300, 0x81},
+    {0x0301, 0xa0},
+        {0x0201, 0x10},
+
     {0x0000, 0x00}
 };
 
 static  struct reginfo sensor_Exposure5[]=
 {
-    // 2
-    {0x3047, 0x05},
-    {0x3018, 0xa8},
-    {0x3019, 0x98},
-    {0x301a, 0xe6},
+     // 2
+    {0x0300, 0x81},
+    {0x0301, 0xb0},
+        {0x0201, 0x20},
+
     {0x0000, 0x00}
 };
 
 static  struct reginfo sensor_Exposure6[]=
 {
     // 3
-    {0x3047, 0x05},
-    {0x3018, 0xc8},
-    {0x3019, 0xb8},
-    {0x301a, 0xf7},
+    {0x0300, 0x81},
+    {0x0301, 0xc0},
+        {0x0201, 0x40},
+
     {0x0000, 0x00}
 };
 
@@ -3046,7 +3070,7 @@ static int sensor_set_flash(struct soc_camera_device *icd, const struct v4l2_que
 {    
     if ((value >= qctrl->minimum) && (value <= qctrl->maximum)) {
         if (value == 3) {       /* ddl@rock-chips.com: torch */
-            sensor_ioctrl(icd, Sensor_Flash, Flash_Torch);   /* Flash On */
+            sensor_ioctrl(icd, Sensor_Flash, Flash_Torch_On);   /* Flash On */
         } else {
             sensor_ioctrl(icd, Sensor_Flash, Flash_Off);
         }

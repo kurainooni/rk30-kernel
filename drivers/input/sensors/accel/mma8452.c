@@ -34,7 +34,8 @@
 #include <linux/sensor-dev.h>
 
 #if 0
-#define DBG(x...) printk(x)
+#define SENSOR_DEBUG_TYPE SENSOR_TYPE_ACCEL
+#define DBG(x...) if(sensor->pdata->type == SENSOR_DEBUG_TYPE) printk(x)
 #else
 #define DBG(x...)
 #endif

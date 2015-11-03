@@ -151,6 +151,8 @@ module_param(debug, int, S_IRUGO|S_IWUSR);
 #define MIN(x,y)   ((x<y) ? x: y)
 #define MAX(x,y)    ((x>y) ? x: y)
 #define RK_SENSOR_24MHZ      24*1000*1000          /* MHz */
+#define RK_SENSOR_12MHZ      12*1000*1000          /* MHz */
+#define PE_ENABLE  0
 #define RK_SENSOR_48MHZ      48
 
 #define write_cif_reg(base,addr, val)  __raw_writel(val, addr+(base))
@@ -271,17 +273,9 @@ module_param(debug, int, S_IRUGO|S_IWUSR);
 		  5.arm scale algorithm has something wrong(may exceed the bound of width or height) ,fix it.
 *v0.x.15: 
 *         1. support rk3066b;
-*v0.x.17: 
-*         1. support 8Mega picture;
-*v0.x.19:
-*         1. invalidate the limit which scale is invalidat when scale ratio > 2;
-*v0.x.1b: 1. fix oops bug  when using arm to do scale_crop if preview buffer is not allocated correctly 
-          2. rk_camera_set_fmt will called twice, optimize the procedure. at the first time call ,just to do the sensor init.
 
-*v0.x.1c:
-*         1. fix query resolution error;
 */
-#define RK_CAM_VERSION_CODE KERNEL_VERSION(0, 2, 0x1c)
+#define RK_CAM_VERSION_CODE KERNEL_VERSION(0, 2, 0x15)
 
 /* limit to rk29 hardware capabilities */
 #define RK_CAM_BUS_PARAM   (SOCAM_MASTER |\
@@ -487,6 +481,7 @@ static int rk_videobuf_setup(struct videobuf_queue *vq, unsigned int *count,
 	else
 		bytes_per_line_host = soc_mbus_bytes_per_line(pcdev->host_width,
 					   icd->current_fmt->host_fmt);
+	printk("user code = %d,packing = %d",icd->current_fmt->code,fmt.packing);
     dev_dbg(&icd->dev, "count=%d, size=%d\n", *count, *size);
 
 	if (bytes_per_line_host < 0)
@@ -540,7 +535,6 @@ static int rk_videobuf_setup(struct videobuf_queue *vq, unsigned int *count,
 				RKCAMERA_TR("\n %s vbinfo kmalloc fail\n", __FUNCTION__);
 				BUG();
 			}
-            memset(pcdev->vbinfo,0,sizeof(struct rk29_camera_vbinfo)*(*count));
 			pcdev->vbinfo_count = *count;
         }
 #endif        
@@ -580,8 +574,8 @@ static int rk_videobuf_prepare(struct videobuf_queue *vq, struct videobuf_buffer
     int ret;
     int bytes_per_line = soc_mbus_bytes_per_line(icd->user_width,
 						icd->current_fmt->host_fmt);
-	if ((bytes_per_line < 0) || (vb->boff == 0))
-		return -EINVAL;
+	if (bytes_per_line < 0)
+		return bytes_per_line;
 
     buf = container_of(vb, struct rk_camera_buffer, vb);
 
@@ -935,12 +929,12 @@ static int rk_camera_scale_crop_ipp(struct work_struct *work)
 	struct rk_camera_dev *pcdev = camera_work->pcdev;
 	int vipdata_base;
 	unsigned long int flags;
+	int id;
 
 	struct rk29_ipp_req ipp_req;
 	int src_y_offset,src_uv_offset,dst_y_offset,dst_uv_offset,src_y_size,dst_y_size;
 	int scale_times,w,h;
 	 int ret = 0;
-
     /*
     *ddl@rock-chips.com: 
     * IPP Dest image resolution is 2047x1088, so scale operation break up some times
@@ -951,11 +945,9 @@ static int rk_camera_scale_crop_ipp(struct work_struct *work)
     } else {
         scale_times = 1;
     }
-    memset(&ipp_req, 0, sizeof(struct rk29_ipp_req));
-
-
+    memset(&ipp_req, 0, sizeof(struct rk29_ipp_req));	
     ipp_req.timeout = 3000;
-    ipp_req.flag = IPP_ROT_0; 
+   ipp_req.flag = IPP_ROT_0; 
     ipp_req.store_clip_mode =1;
     ipp_req.src0.w = pcdev->zoominfo.a.c.width/scale_times;
     ipp_req.src0.h = pcdev->zoominfo.a.c.height/scale_times;
@@ -1011,6 +1003,7 @@ static int rk_camera_scale_crop_ipp(struct work_struct *work)
     		}
         }
     }
+
 do_ipp_err:
 	return ret;    
 }
@@ -1054,7 +1047,7 @@ static int rk_camera_scale_crop_arm(struct work_struct *work)
 
     zoomindstxIntInv = ((unsigned long)cropW<<16)/dstW + 1;
     zoomindstyIntInv = ((unsigned long)cropH<<16)/dstH + 1;
-
+ 
     //y
     //for(y = 0; y<dstH - 1 ; y++ ) {   
     for(y = 0; y<dstH; y++ ) {   
@@ -1124,6 +1117,7 @@ static int rk_camera_scale_crop_arm(struct work_struct *work)
         }
         pdUV += dstW*2;
     }
+
 rk_camera_scale_crop_arm_end:
 
     dmac_flush_range((void*)src,(void*)(src+pcdev->vipmem_bsize));
@@ -1304,7 +1298,7 @@ static void rk_videobuf_release(struct videobuf_queue *vq,
 
     flush_workqueue(pcdev->camera_wq); 
 #if CAMERA_VIDEOBUF_ARM_ACCESS
-    if ((pcdev->vbinfo) && (vb->i < pcdev->vbinfo_count)) {
+    if (pcdev->vbinfo) {
         vb_info = pcdev->vbinfo + vb->i;
         
         if (vb_info->vir_addr) {
@@ -1361,7 +1355,16 @@ static int rk_camera_activate(struct rk_camera_dev *pcdev, struct soc_camera_dev
     //if (icd->ops->query_bus_param)                                                  /* ddl@rock-chips.com : Query Sensor's xclk */
         //sensor_bus_flags = icd->ops->query_bus_param(icd);
 	clk_enable(pcdev->cif_clk_out);
+	#if PE_ENABLE
+          if(strcmp("gt2005_back", dev_name(icd->pdev))==0)
+		clk_set_rate(pcdev->cif_clk_out,RK_SENSOR_12MHZ);
+	    else if(strcmp("gc2035_back_3", dev_name(icd->pdev))==0)
+		clk_set_rate(pcdev->cif_clk_out,RK_SENSOR_12MHZ);
+		else
+		clk_set_rate(pcdev->cif_clk_out,RK_SENSOR_24MHZ);
+	#else
     clk_set_rate(pcdev->cif_clk_out,RK_SENSOR_24MHZ);
+	#endif
 
 	ndelay(10);
     //soft reset  the registers
@@ -1820,10 +1823,11 @@ static void rk_camera_setup_format(struct soc_camera_device *icd, __u32 host_pix
     if((read_cif_reg(pcdev->base,CIF_CIF_CTRL) & MODE_PINGPONG)
 		||(read_cif_reg(pcdev->base,CIF_CIF_CTRL) & MODE_LINELOOP)) {
 	    BUG();	
-    } else{ // this is one frame mode
-	    cif_crop = (rect->left+ (rect->top<<16));
-	    cif_fs	= ((rect->width ) + (rect->height<<16));
-	}
+     } else{ // this is one frame mode
+		cif_crop = (rect->left+ (rect->top<<16));
+		cif_fs	= ((rect->width ) + (rect->height<<16));
+	 }
+	RKCAMERA_TR("%s..%d.. \n",__FUNCTION__,__LINE__);
 
 	write_cif_reg(pcdev->base,CIF_CIF_CROP, cif_crop);
 	write_cif_reg(pcdev->base,CIF_CIF_SET_SIZE, cif_fs);
@@ -1983,7 +1987,7 @@ static int rk_camera_set_fmt(struct soc_camera_device *icd,
 
 	usr_w = pix->width;
 	usr_h = pix->height;
-    RKCAMERA_DG("%s enter width:%d  height:%d\n",__FUNCTION__,usr_w,usr_h);
+    RKCAMERA_TR("%s enter width:%d  height:%d\n",__FUNCTION__,usr_w,usr_h);
     xlate = soc_camera_xlate_by_fourcc(icd, pix->pixelformat);
     if (!xlate) {
         dev_err(dev, "Format %x not found\n", pix->pixelformat);
@@ -1995,7 +1999,6 @@ static int rk_camera_set_fmt(struct soc_camera_device *icd,
     if (pcdev->icd_init == 0) {
         v4l2_subdev_call(sd,core, init, 0); 
         pcdev->icd_init = 1;
-        return 0;
     }
     stream_on = read_cif_reg(pcdev->base,CIF_CIF_CTRL);
     if (stream_on & ENABLE_CAPTURE)
@@ -2155,8 +2158,6 @@ static bool rk_camera_fmt_capturechk(struct v4l2_format *f)
 		ret = true;
 	} else if ((f->fmt.pix.width == 2592) && (f->fmt.pix.height == 1944)) {
 		ret = true;
-	} else if ((f->fmt.pix.width == 3264) && (f->fmt.pix.height == 2448)) {
-		ret = true;
 	}
 
 	if (ret == true)
@@ -2180,7 +2181,8 @@ static int rk_camera_try_fmt(struct soc_camera_device *icd,
     
 	usr_w = pix->width;
 	usr_h = pix->height;
-    
+	RKCAMERA_DG("%s enter width:%d  height:%d\n",__FUNCTION__,usr_w,usr_h);
+
     xlate = soc_camera_xlate_by_fourcc(icd, pixfmt);
     if (!xlate) {
         dev_err(icd->dev.parent, "Format (%c%c%c%c) not found\n", pixfmt & 0xFF, (pixfmt >> 8) & 0xFF,
@@ -2206,31 +2208,16 @@ static int rk_camera_try_fmt(struct soc_camera_device *icd,
 		return pix->bytesperline;
 
     /* limit to sensor capabilities */
-    memset(&mf,0x00,sizeof(struct v4l2_mbus_framefmt));
 	mf.width	= pix->width;
 	mf.height	= pix->height;
 	mf.field	= pix->field;
 	mf.colorspace	= pix->colorspace;
 	mf.code		= xlate->code;
-    /* ddl@rock-chips.com : It is query max resolution only. */
-    if ((usr_w == 10000) && (usr_h == 10000)) {
-        mf.reserved[6] = 0xfefe5a5a;
-    }
 
 	ret = v4l2_subdev_call(sd, video, try_mbus_fmt, &mf);
 	if (ret < 0)
 		goto RK_CAMERA_TRY_FMT_END;
-    
-	//query resolution.
-	if((usr_w == 10000) && (usr_h == 10000)) {
-		pix->width = mf.width;
-        pix->height = mf.height;
-        RKCAMERA_DG("%s: Sensor resolution : %dx%d\n",__FUNCTION__,mf.width,mf.height);
-		goto RK_CAMERA_TRY_FMT_END;
-	} else {
-        RKCAMERA_DG("%s: user demand: %dx%d  sensor output: %dx%d \n",__FUNCTION__,usr_w,usr_h,mf.width,mf.height);
-	}
-    
+    RKCAMERA_DG("%s mf.width:%d  mf.height:%d\n",__FUNCTION__,mf.width,mf.height);
 	#ifdef CONFIG_VIDEO_RK29_WORK_IPP       
 	if ((mf.width != usr_w) || (mf.height != usr_h)) {
         bytes_per_line_host = soc_mbus_bytes_per_line(mf.width,icd->current_fmt->host_fmt); 
@@ -2248,16 +2235,14 @@ static int rk_camera_try_fmt(struct soc_camera_device *icd,
             pix->width = mf.width;
             pix->height = mf.height;            
 		}
-        /* ddl@rock-chips.com: Invalidate these code, because sensor need interpolate */
-        #if 0     
+        
         if ((mf.width < usr_w) || (mf.height < usr_h)) {
             if (((usr_w>>1) > mf.width) || ((usr_h>>1) > mf.height)) {
                 RKCAMERA_TR("The aspect ratio(%dx%d/%dx%d) is bigger than 2 !\n",mf.width,mf.height,usr_w,usr_h);
                 pix->width = mf.width;
                 pix->height = mf.height;
             }
-        }    
-        #endif
+        }        
 	}
 	#else
 	//need to change according to crop and scale capablicity

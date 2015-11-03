@@ -27,7 +27,7 @@
 
 #define DRIVER_NAME	"rk29xxnand"
 
-const char rknand_base_version[] = "rknand_base.c version: 4.38 20120717";
+const char rknand_base_version[] = "rknand_base.c version: 4.40 20120824";
 #define NAND_DEBUG_LEVEL0 0
 #define NAND_DEBUG_LEVEL1 1
 #define NAND_DEBUG_LEVEL2 2
@@ -66,16 +66,16 @@ static struct proc_dir_entry *my_trac_proc_entry;
 #define MAX_TRAC_BUFFER_SIZE     (long)(2048 * 8 * 512) //sector
 static char grknand_trac_buf[MAX_TRAC_BUFFER_SIZE];
 static char *ptrac_buf = grknand_trac_buf;
-void trac_log(long lba,int len, int mod)
+void trac_log(long lba,int len,int *pbuf,int mod)
 {
 	unsigned long long t;
     unsigned long nanosec_rem;
     t = cpu_clock(UINT_MAX);
     nanosec_rem = do_div(t, 1000000000);
     if(mod)
-        ptrac_buf += sprintf(ptrac_buf,"[%5lu.%06lu] W %d %d \n",(unsigned long) t, nanosec_rem / 1000,lba,len);
+        ptrac_buf += sprintf(ptrac_buf,"[%5lu.%06lu] W %d %d %8x %8x\n",(unsigned long) t, nanosec_rem / 1000,lba,len,pbuf[0],pbuf[1]);
     else
-        ptrac_buf += sprintf(ptrac_buf,"[%5lu.%06lu] R %d %d \n",(unsigned long) t, nanosec_rem / 1000,lba,len);
+        ptrac_buf += sprintf(ptrac_buf,"[%5lu.%06lu] R %d %d %8x %8x\n",(unsigned long) t, nanosec_rem / 1000,lba,len,pbuf[0],pbuf[1]);
 }
 
 void trac_logs(char *s)
@@ -121,7 +121,6 @@ long grknand_buf[MAX_BUFFER_SIZE * 512/4] __attribute__((aligned(4096)));
 long grknand_dma_buf[PAGE_LEN*4*5] __attribute__((aligned(4096)));
 
 static struct proc_dir_entry *my_proc_entry;
-static struct proc_dir_entry *my_custom_proc_entry;
 extern int rkNand_proc_ftlread(char *page);
 extern int rkNand_proc_bufread(char *page);
 static int rkNand_proc_read(char *page,
@@ -144,27 +143,6 @@ static int rkNand_proc_read(char *page,
     }
 	return buf - page < count ? buf - page : count;
 }
-extern char GetSNSectorInfo(char * pbuf);
-
-int proc_read_custom(char *page, char **start, off_t off, int count, int *eof,
-                void *data) {
-	char CustomBuffer[512];
-	
-	if (off > 0) 
-		return 0; 	
-	else {
-		memset(CustomBuffer, 0, 512);
-	    if(gpNandInfo->GetSNSectorInfo)
-		   	gpNandInfo->GetSNSectorInfo( CustomBuffer );
-		else
-			return 0;
-		//GetSNSectorInfo( CustomBuffer );
-		memcpy(page, CustomBuffer+2, (int)(CustomBuffer[0]));
-		page[(int)(CustomBuffer[0])] = '\0';
-		return (int)(CustomBuffer[0]);
-	}
-}
- 
 
 static void rknand_create_procfs(void)
 {
@@ -189,17 +167,6 @@ static void rknand_create_procfs(void)
         my_trac_proc_entry->data = NULL;
     } 
 #endif
-    /* Install the proc_custom entry */
-    my_custom_proc_entry= create_proc_entry("rknand_custom",
-                           S_IRUGO | S_IFREG,
-                           NANDPROC_ROOT);
-
-    if (my_custom_proc_entry) {
-        my_custom_proc_entry->write_proc = NULL;
-        my_custom_proc_entry->read_proc = proc_read_custom;
-        my_custom_proc_entry->data = NULL;
-    } 
-
 }
 
 void printk_write_log(long lba,int len, const u_char *pbuf)
@@ -220,7 +187,7 @@ static int rknand_read(struct mtd_info *mtd, loff_t from, size_t len,
 	int sector = len>>9;
 	int LBA = (int)(from>>9);
 #ifdef RKNAND_TRAC_EN
-    //trac_log(LBA,sector,0);
+    trac_log(LBA,sector,buf,0);
 #endif
 	//printk("R %d %d \n",(int)LBA,sector);
 	//if(rknand_debug)
@@ -240,7 +207,7 @@ static int rknand_write(struct mtd_info *mtd, loff_t from, size_t len,
 	int sector = len>>9;
 	int LBA = (int)(from>>9);
 #ifdef RKNAND_TRAC_EN
-    trac_log(LBA,sector,1);
+    trac_log(LBA,sector,buf,1);
 #endif
 	//printk("W %d %d \n",(int)LBA,sector);
     //return 0;
@@ -311,6 +278,7 @@ char GetSNSectorInfo(char * pbuf)
     return 0;
 }
 
+EXPORT_SYMBOL(GetSNSectorInfo); //Galland: required by drivers/bluetooth/vflash.c
 
 char GetSNSectorInfoBeforeNandInit(char * pbuf)
 {
@@ -319,7 +287,6 @@ char GetSNSectorInfoBeforeNandInit(char * pbuf)
 	//print_hex_dump(KERN_WARNING, "sn:", DUMP_PREFIX_NONE, 16,1, sn_addr, 16, 0);
     return 0;
 } 
-
 
 char GetChipSectorInfo(char * pbuf)
 {

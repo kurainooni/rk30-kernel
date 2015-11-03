@@ -197,7 +197,7 @@ static void rockchip_snd_rxctrl(struct rk29_i2s_info *i2s, int on, bool stopI2S)
 		}
 
 	  flag_i2s_rx = 1;
-#if (CONFIG_SND_SOC_RT5631)
+#ifdef CONFIG_SND_SOC_RT5631
 //bard 7-16 s
 		schedule_delayed_work(&rt5631_delay_cap,HZ/4);
 //bard 7-16 e
@@ -490,6 +490,16 @@ static int rockchip_i2s_dai_probe(struct snd_soc_dai *dai)
 {	
 	I2S_DBG("Enter %s, %d >>>>>>>>>>>\n", __func__, __LINE__);
 	switch(dai->id) {
+#if defined(CONFIG_ARCH_RK3066B)
+        case 1:
+                        rk30_mux_api_set(GPIO1C0_I2SCLK_NAME, GPIO1C_I2SCLK);
+                        rk30_mux_api_set(GPIO1C1_I2SSCLK_NAME, GPIO1C_I2SSCLK);
+                        rk30_mux_api_set(GPIO1C2_I2SLRCLKRX_NAME, GPIO1C_I2SLRCLKRX);
+                        rk30_mux_api_set(GPIO1C3_I2SLRCLKTX_NAME, GPIO1C_I2SLRCLKTX);
+                        rk30_mux_api_set(GPIO1C4_I2SSDI_NAME, GPIO1C_I2SSDI);
+                        rk30_mux_api_set(GPIO1C5_I2SSDO_NAME, GPIO1C_I2SSDO);
+                        break;
+#elif defined(CONFIG_ARCH_RK30)
         case 0:
 			rk30_mux_api_set(GPIO0A7_I2S8CHSDI_NAME, GPIO0A_I2S_8CH_SDI);		
 			rk30_mux_api_set(GPIO0B0_I2S8CHCLK_NAME, GPIO0B_I2S_8CH_CLK);                
@@ -497,9 +507,9 @@ static int rockchip_i2s_dai_probe(struct snd_soc_dai *dai)
 			rk30_mux_api_set(GPIO0B2_I2S8CHLRCKRX_NAME, GPIO0B_I2S_8CH_LRCK_RX);
 			rk30_mux_api_set(GPIO0B3_I2S8CHLRCKTX_NAME, GPIO0B_I2S_8CH_LRCK_TX);	
 			rk30_mux_api_set(GPIO0B4_I2S8CHSDO0_NAME, GPIO0B_I2S_8CH_SDO0);
-			//rk30_mux_api_set(GPIO0B5_I2S8CHSDO1_NAME, GPIO0B_I2S_8CH_SDO1);
-			//rk30_mux_api_set(GPIO0B6_I2S8CHSDO2_NAME, GPIO0B_I2S_8CH_SDO2);
-			//rk30_mux_api_set(GPIO0B7_I2S8CHSDO3_NAME, GPIO0B_I2S_8CH_SDO3);        
+			rk30_mux_api_set(GPIO0B5_I2S8CHSDO1_NAME, GPIO0B_I2S_8CH_SDO1);
+			rk30_mux_api_set(GPIO0B6_I2S8CHSDO2_NAME, GPIO0B_I2S_8CH_SDO2);
+			rk30_mux_api_set(GPIO0B7_I2S8CHSDO3_NAME, GPIO0B_I2S_8CH_SDO3);        
 			break;
         case 1:
 			rk30_mux_api_set(GPIO0C0_I2S12CHCLK_NAME, GPIO0C_I2S1_2CH_CLK);
@@ -514,9 +524,22 @@ static int rockchip_i2s_dai_probe(struct snd_soc_dai *dai)
 			rk30_mux_api_set(GPIO0D1_I2S22CHSCLK_SMCWEN_NAME, GPIO0D_I2S2_2CH_SCLK);
 			rk30_mux_api_set(GPIO0D2_I2S22CHLRCKRX_SMCOEN_NAME, GPIO0D_I2S2_2CH_LRCK_RX);
 			rk30_mux_api_set(GPIO0D3_I2S22CHLRCKTX_SMCADVN_NAME, GPIO0D_I2S2_2CH_LRCK_TX);				
-            rk30_mux_api_set(GPIO0D4_I2S22CHSDI_SMCADDR0_NAME, GPIO0D_I2S2_2CH_SDI);
-            rk30_mux_api_set(GPIO0D5_I2S22CHSDO_SMCADDR1_NAME, GPIO0D_I2S2_2CH_SDO);
-            break;				
+            		rk30_mux_api_set(GPIO0D4_I2S22CHSDI_SMCADDR0_NAME, GPIO0D_I2S2_2CH_SDI);
+            		rk30_mux_api_set(GPIO0D5_I2S22CHSDO_SMCADDR1_NAME, GPIO0D_I2S2_2CH_SDO);
+           		break;				
+#endif
+#ifdef CONFIG_ARCH_RK2928
+        case 0:
+        #if 0 //iomux --> gps(.ko)
+                rk30_mux_api_set(GPIO1A0_I2S_MCLK_NAME, GPIO1A_I2S_MCLK);
+                rk30_mux_api_set(GPIO1A1_I2S_SCLK_NAME, GPIO1A_I2S_SCLK);
+                rk30_mux_api_set(GPIO1A2_I2S_LRCKRX_GPS_CLK_NAME, GPIO1A_I2S_LRCKRX);
+                rk30_mux_api_set(GPIO1A3_I2S_LRCKTX_NAME, GPIO1A_I2S_LRCKTX);
+                rk30_mux_api_set(GPIO1A4_I2S_SDO_GPS_MAG_NAME, GPIO1A_I2S_SDO);
+                rk30_mux_api_set(GPIO1A5_I2S_SDI_GPS_SIGN_NAME, GPIO1A_I2S_SDI);
+        #endif
+                break;
+#endif
         default:
             I2S_DBG("Enter:%s, %d, Error For DevId!!!", __FUNCTION__, __LINE__);
             return -EINVAL;
@@ -633,6 +656,7 @@ static int __devinit rockchip_i2s_probe(struct platform_device *pdev)
 	
 	switch(pdev->id)
 	{
+#ifdef CONFIG_ARCH_RK30
 	case 0:
 		i2s->dma_capture->channel = DMACH_I2S0_8CH_RX;
 		i2s->dma_capture->dma_addr = RK30_I2S0_8CH_PHYS + I2S_RXR_BUFF;
@@ -650,7 +674,16 @@ static int __devinit rockchip_i2s_probe(struct platform_device *pdev)
 		i2s->dma_capture->dma_addr = RK30_I2S2_2CH_PHYS + I2S_RXR_BUFF;
 		i2s->dma_playback->channel = DMACH_I2S2_2CH_TX;
 		i2s->dma_playback->dma_addr = RK30_I2S2_2CH_PHYS + I2S_TXR_BUFF;	
-		break;		
+		break;
+#endif
+#ifdef CONFIG_ARCH_RK2928
+	case 0:
+		i2s->dma_capture->channel = DMACH_I2S0_8CH_RX;
+		i2s->dma_capture->dma_addr = RK2928_I2S_PHYS + I2S_RXR_BUFF;
+		i2s->dma_playback->channel = DMACH_I2S0_8CH_TX;
+		i2s->dma_playback->dma_addr = RK2928_I2S_PHYS + I2S_TXR_BUFF;		
+		break;
+#endif
 	}
 
 	i2s->dma_capture->client = &rk29_dma_client_in;

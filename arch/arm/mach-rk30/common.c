@@ -42,6 +42,13 @@ static void __init rk30_cpu_axi_init(void)
 	dsb();
 }
 
+static void __init rk30_io_drive_strength_init(void)
+{
+#if defined(CONFIG_ARCH_RK3066B)
+	writel_relaxed(0x11001100, RK30_GRF_BASE + GRF_IO_CON4);
+#endif
+}
+
 #define L2_LY_SP_OFF (0)
 #define L2_LY_SP_MSK (0x7)
 
@@ -70,24 +77,18 @@ static void __init rk30_l2_cache_init(void)
 	/* L2X0 Power Control */
 	writel_relaxed(L2X0_DYNAMIC_CLK_GATING_EN | L2X0_STNDBY_MODE_EN, RK30_L2C_BASE + L2X0_POWER_CTRL);
 
-	/*
-         * 16-way associativity, parity disabled
-         * Way size - 32KB
-         */
-	aux_ctrl = ((1 << L2X0_AUX_CTRL_ASSOCIATIVITY_SHIFT) | // 16-way
+	aux_ctrl = (
 			(0x1 << 25) | 	// round-robin
 			(0x1 << 0) |		// Full Line of Zero Enable
 			(0x1 << L2X0_AUX_CTRL_NS_LOCKDOWN_SHIFT) |
-			(0x2 << L2X0_AUX_CTRL_WAY_SIZE_SHIFT) | // 32KB way-size
 			(0x1 << L2X0_AUX_CTRL_DATA_PREFETCH_SHIFT) |
 			(0x1 << L2X0_AUX_CTRL_INSTR_PREFETCH_SHIFT) |
 			(0x1 << L2X0_AUX_CTRL_EARLY_BRESP_SHIFT) );
 
-	aux_ctrl_mask = ~((1 << L2X0_AUX_CTRL_ASSOCIATIVITY_SHIFT) | // 16-way
+	aux_ctrl_mask = ~(
 			(0x1 << 25) | 	// round-robin
 			(0x1 << 0) |		// Full Line of Zero Enable
 			(0x1 << L2X0_AUX_CTRL_NS_LOCKDOWN_SHIFT) |
-			(0x7 << L2X0_AUX_CTRL_WAY_SIZE_SHIFT) | // 32KB way-size
 			(0x1 << L2X0_AUX_CTRL_DATA_PREFETCH_SHIFT) |
 			(0x1 << L2X0_AUX_CTRL_INSTR_PREFETCH_SHIFT) |
 			(0x1 << L2X0_AUX_CTRL_EARLY_BRESP_SHIFT) );
@@ -103,8 +104,6 @@ static void __init rk30_boot_mode_init(void)
 	boot_mode = readl_relaxed(RK30_PMU_BASE + PMU_SYS_REG1);
 
 	if (boot_flag == (SYS_KERNRL_REBOOT_FLAG | BOOT_RECOVER)) {
-		boot_mode = BOOT_MODE_RECOVERY;
-	} else if (strstr(boot_command_line, "(parameter)")) {
 		boot_mode = BOOT_MODE_RECOVERY;
 	}
 	if (boot_mode || boot_flag)
@@ -132,6 +131,7 @@ void __init rk30_map_io(void)
 	rk30_map_common_io();
 	rk29_setup_early_printk();
 	rk30_cpu_axi_init();
+	rk30_io_drive_strength_init();
 	rk29_sram_init();
 	board_clock_init();
 	rk30_l2_cache_init();

@@ -10,7 +10,9 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 
-#ifdef CONFIG_ARCH_RK30
+#if defined(CONFIG_ARCH_RK3066B)
+#define RK610_RESET_PIN   RK30_PIN2_PC5
+#elif defined(CONFIG_ARCH_RK30)
 #define RK610_RESET_PIN   RK30_PIN0_PC6
 #else
 #define RK610_RESET_PIN   RK29_PIN6_PC1

@@ -1,1 +1,0 @@
-cmd_arch/arm/common/built-in.o :=  /media/florian/android_compile/rk/toolchains/arm-eabi-linaro-4.6.2/bin/arm-eabi-ld.bfd -EL    -r -o arch/arm/common/built-in.o arch/arm/common/gic.o arch/arm/common/pl330.o arch/arm/common/fiq_glue.o arch/arm/common/fiq_glue_setup.o arch/arm/common/fiq_debugger.o 

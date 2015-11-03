@@ -51,11 +51,6 @@ static void clk_notify(struct clk *clk, unsigned long msg,
 #define LOCK() do { WARN_ON(in_irq()); if (!irqs_disabled()) spin_lock_bh(&clockfw_lock); } while (0)
 #define UNLOCK() do { if (!irqs_disabled()) spin_unlock_bh(&clockfw_lock); } while (0)
 /**********************************************for clock data****************************************************/
-struct list_head *get_rk_clocks_head(void)
-{
-	return &clocks;
-}
-
 static struct clk *def_ops_clk=NULL;
 
 void clk_register_default_ops_clk(struct clk *clk)
@@ -602,7 +597,7 @@ static void clk_notify(struct clk *clk, unsigned long msg,
  * upon allocation failure; otherwise, passes along the return value
  * of blocking_notifier_chain_register().
  */
-int clk_notifier_register(struct clk *clk, struct notifier_block *nb)
+int rk30_clk_notifier_register(struct clk *clk, struct notifier_block *nb)
 {
 	struct clk_notifier *cn = NULL, *cn_new = NULL;
 	int r;
@@ -647,7 +642,7 @@ cnr_out:
 
 	return r;
 }
-EXPORT_SYMBOL(clk_notifier_register);
+EXPORT_SYMBOL(rk30_clk_notifier_register);
 
 /**
  * clk_notifier_unregister - remove a clock change notifier
@@ -658,7 +653,7 @@ EXPORT_SYMBOL(clk_notifier_register);
  * Returns -EINVAL if called with null arguments; otherwise, passes
  * along the return value of blocking_notifier_chain_unregister().
  */
-int clk_notifier_unregister(struct clk *clk, struct notifier_block *nb)
+int rk30_clk_notifier_unregister(struct clk *clk, struct notifier_block *nb)
 {
 	struct clk_notifier *cn = NULL;
 	struct clk *clkp;
@@ -698,7 +693,7 @@ cnu_out:
 
 	return r;
 }
-EXPORT_SYMBOL(clk_notifier_unregister);
+EXPORT_SYMBOL(rk30_clk_notifier_unregister);
 
 static struct clk_dump_ops *dump_def_ops;
 

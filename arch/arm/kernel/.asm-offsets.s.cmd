@@ -1,4 +1,4 @@
-cmd_arch/arm/kernel/asm-offsets.s := /media/florian/android_compile/rk/toolchains/arm-eabi-linaro-4.6.2/bin/arm-eabi-gcc -Wp,-MD,arch/arm/kernel/.asm-offsets.s.d  -nostdinc -isystem /media/florian/android_compile/rk/toolchains/arm-eabi-linaro-4.6.2/bin/../lib/gcc/arm-eabi/4.6.2/include -I/media/florian/android_compile/kernel/arch/arm/include -Iarch/arm/include/generated -Iinclude  -include include/generated/autoconf.h -D__KERNEL__ -mlittle-endian -Iarch/arm/mach-rk30/include -Iarch/arm/plat-rk/include -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -marm -fno-dwarf2-cfi-asm -mabi=aapcs-linux -mno-thumb-interwork -funwind-tables -D__LINUX_ARM_ARCH__=7 -march=armv7-a -msoft-float -Uarm -Wframe-larger-than=1024 -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO    -D"KBUILD_STR(s)=\#s" -D"KBUILD_BASENAME=KBUILD_STR(asm_offsets)"  -D"KBUILD_MODNAME=KBUILD_STR(asm_offsets)" -fverbose-asm -S -o arch/arm/kernel/asm-offsets.s arch/arm/kernel/asm-offsets.c
+cmd_arch/arm/kernel/asm-offsets.s := /media/florian/android_compile/rk/toolchains/arm-eabi-linaro-4.6.2/bin/arm-eabi-gcc -Wp,-MD,arch/arm/kernel/.asm-offsets.s.d  -nostdinc -isystem /media/florian/android_compile/rk/toolchains/arm-eabi-linaro-4.6.2/bin/../lib/gcc/arm-eabi/4.6.2/include -I/media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include -Iarch/arm/include/generated -Iinclude  -include include/generated/autoconf.h -D__KERNEL__ -mlittle-endian -Iarch/arm/mach-rk30/include -Iarch/arm/plat-rk/include -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -marm -fno-dwarf2-cfi-asm -mabi=aapcs-linux -mno-thumb-interwork -funwind-tables -D__LINUX_ARM_ARCH__=7 -march=armv7-a -msoft-float -Uarm -Wframe-larger-than=1024 -fno-stack-protector -Wno-unused-but-set-variable -fomit-frame-pointer -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -DCC_HAVE_ASM_GOTO    -D"KBUILD_STR(s)=\#s" -D"KBUILD_BASENAME=KBUILD_STR(asm_offsets)"  -D"KBUILD_MODNAME=KBUILD_STR(asm_offsets)" -fverbose-asm -S -o arch/arm/kernel/asm-offsets.s arch/arm/kernel/asm-offsets.c
 
 source_arch/arm/kernel/asm-offsets.s := arch/arm/kernel/asm-offsets.c
 
@@ -33,6 +33,7 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/task/delay/acct.h) \
     $(wildcard include/config/fair/group/sched.h) \
     $(wildcard include/config/rt/group/sched.h) \
+    $(wildcard include/config/cgroup/sched.h) \
     $(wildcard include/config/preempt/notifiers.h) \
     $(wildcard include/config/blk/dev/io/trace.h) \
     $(wildcard include/config/preempt/rcu.h) \
@@ -66,9 +67,8 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/stack/growsup.h) \
     $(wildcard include/config/debug/stack/usage.h) \
     $(wildcard include/config/preempt.h) \
-    $(wildcard include/config/cgroup/sched.h) \
     $(wildcard include/config/mm/owner.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/param.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/param.h \
     $(wildcard include/config/hz.h) \
   include/linux/capability.h \
   include/linux/types.h \
@@ -77,9 +77,9 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/arch/dma/addr/t/64bit.h) \
     $(wildcard include/config/phys/addr/t/64bit.h) \
     $(wildcard include/config/64bit.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/types.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/types.h \
   include/asm-generic/int-ll64.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/bitsperlong.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/bitsperlong.h \
   include/asm-generic/bitsperlong.h \
   include/linux/posix_types.h \
   include/linux/stddef.h \
@@ -93,7 +93,7 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/arch/supports/optimized/inlining.h) \
     $(wildcard include/config/optimize/inlining.h) \
   include/linux/compiler-gcc4.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/posix_types.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/posix_types.h \
   include/linux/threads.h \
     $(wildcard include/config/nr/cpus.h) \
     $(wildcard include/config/base/small.h) \
@@ -106,10 +106,10 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/ftrace/mcount/record.h) \
   /media/florian/android_compile/rk/toolchains/arm-eabi-linaro-4.6.2/bin/../lib/gcc/arm-eabi/4.6.2/include/stdarg.h \
   include/linux/linkage.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/linkage.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/linkage.h \
   include/linux/bitops.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/bitops.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/system.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/bitops.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/system.h \
     $(wildcard include/config/cpu/32v6k.h) \
     $(wildcard include/config/cpu/xsc3.h) \
     $(wildcard include/config/cpu/fa526.h) \
@@ -123,12 +123,12 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/preempt/tracer.h) \
     $(wildcard include/config/trace/irqflags/support.h) \
   include/linux/typecheck.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/irqflags.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/ptrace.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/irqflags.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/ptrace.h \
     $(wildcard include/config/cpu/endian/be8.h) \
     $(wildcard include/config/arm/thumb.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/hwcap.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/outercache.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/hwcap.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/outercache.h \
     $(wildcard include/config/outer/cache/sync.h) \
     $(wildcard include/config/outer/cache.h) \
   include/asm-generic/cmpxchg-local.h \
@@ -140,10 +140,10 @@ deps_arch/arm/kernel/asm-offsets.s := \
   include/asm-generic/bitops/const_hweight.h \
   include/asm-generic/bitops/lock.h \
   include/asm-generic/bitops/le.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/byteorder.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/byteorder.h \
   include/linux/byteorder/little_endian.h \
   include/linux/swab.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/swab.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/swab.h \
   include/linux/byteorder/generic.h \
   include/linux/log2.h \
     $(wildcard include/config/arch/has/ilog2/u32.h) \
@@ -155,19 +155,19 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/modules.h) \
     $(wildcard include/config/hotplug.h) \
   include/linux/dynamic_debug.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/bug.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/bug.h \
     $(wildcard include/config/bug.h) \
     $(wildcard include/config/debug/bugverbose.h) \
   include/asm-generic/bug.h \
     $(wildcard include/config/generic/bug.h) \
     $(wildcard include/config/generic/bug/relative/pointers.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/div64.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/div64.h \
   include/linux/timex.h \
   include/linux/time.h \
     $(wildcard include/config/arch/uses/gettimeoffset.h) \
   include/linux/cache.h \
     $(wildcard include/config/arch/has/cache/line/size.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/cache.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/cache.h \
     $(wildcard include/config/arm/l1/cache/shift.h) \
     $(wildcard include/config/aeabi.h) \
   include/linux/seqlock.h \
@@ -178,10 +178,10 @@ deps_arch/arm/kernel/asm-offsets.s := \
   include/linux/preempt.h \
     $(wildcard include/config/debug/preempt.h) \
   include/linux/thread_info.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/thread_info.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/fpstate.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/thread_info.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/fpstate.h \
     $(wildcard include/config/vfpv3.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/domain.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/domain.h \
     $(wildcard include/config/io/36.h) \
     $(wildcard include/config/cpu/use/domains.h) \
   include/linux/list.h \
@@ -192,15 +192,15 @@ deps_arch/arm/kernel/asm-offsets.s := \
   include/linux/stringify.h \
   include/linux/bottom_half.h \
   include/linux/spinlock_types.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/spinlock_types.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/spinlock_types.h \
   include/linux/lockdep.h \
     $(wildcard include/config/lock/stat.h) \
   include/linux/rwlock_types.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/spinlock.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/spinlock.h \
     $(wildcard include/config/thumb2/kernel.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/processor.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/processor.h \
     $(wildcard include/config/arm/errata/754327.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/hw_breakpoint.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/hw_breakpoint.h \
   include/linux/rwlock.h \
   include/linux/spinlock_api_smp.h \
     $(wildcard include/config/inline/spin/lock.h) \
@@ -232,12 +232,12 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/inline/write/unlock/irq.h) \
     $(wildcard include/config/inline/read/unlock/irqrestore.h) \
     $(wildcard include/config/inline/write/unlock/irqrestore.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/atomic.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/atomic.h \
     $(wildcard include/config/generic/atomic64.h) \
   include/asm-generic/atomic-long.h \
   include/linux/math64.h \
   include/linux/param.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/timex.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/timex.h \
   arch/arm/mach-rk30/include/mach/timex.h \
   arch/arm/plat-rk/include/plat/timex.h \
   include/linux/jiffies.h \
@@ -248,9 +248,9 @@ deps_arch/arm/kernel/asm-offsets.s := \
   include/linux/bitmap.h \
   include/linux/string.h \
     $(wildcard include/config/binary/printf.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/string.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/string.h \
   include/linux/errno.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/errno.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/errno.h \
   include/asm-generic/errno.h \
   include/asm-generic/errno-base.h \
   include/linux/nodemask.h \
@@ -265,18 +265,18 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/mmu/notifier.h) \
     $(wildcard include/config/transparent/hugepage.h) \
   include/linux/auxvec.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/auxvec.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/auxvec.h \
   include/linux/prio_tree.h \
   include/linux/rwsem.h \
     $(wildcard include/config/rwsem/generic/spinlock.h) \
   include/linux/rwsem-spinlock.h \
   include/linux/completion.h \
   include/linux/wait.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/current.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/current.h \
   include/linux/page-debug-flags.h \
     $(wildcard include/config/page/poisoning.h) \
     $(wildcard include/config/page/debug/something/else.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/page.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/page.h \
     $(wildcard include/config/cpu/copy/v3.h) \
     $(wildcard include/config/cpu/copy/v4wt.h) \
     $(wildcard include/config/cpu/copy/v4wb.h) \
@@ -285,8 +285,8 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/cpu/xscale.h) \
     $(wildcard include/config/cpu/copy/v6.h) \
     $(wildcard include/config/have/arch/pfn/valid.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/glue.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/memory.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/glue.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/memory.h \
     $(wildcard include/config/page/offset.h) \
     $(wildcard include/config/dram/size.h) \
     $(wildcard include/config/dram/base.h) \
@@ -297,9 +297,10 @@ deps_arch/arm/kernel/asm-offsets.s := \
   arch/arm/plat-rk/include/plat/memory.h \
   include/linux/version.h \
   arch/arm/mach-rk30/include/mach/io.h \
+    $(wildcard include/config/arch/rk3066b.h) \
     $(wildcard include/config/rk/debug/uart.h) \
   arch/arm/plat-rk/include/plat/io.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/sizes.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/sizes.h \
   include/asm-generic/sizes.h \
   include/asm-generic/memory_model.h \
     $(wildcard include/config/flatmem.h) \
@@ -307,16 +308,16 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/sparsemem/vmemmap.h) \
     $(wildcard include/config/sparsemem.h) \
   include/asm-generic/getorder.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/mmu.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/cputime.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/mmu.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/cputime.h \
   include/asm-generic/cputime.h \
   include/linux/smp.h \
     $(wildcard include/config/use/generic/smp/helpers.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/smp.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/smp.h \
   include/linux/sem.h \
   include/linux/ipc.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/ipcbuf.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/sembuf.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/ipcbuf.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/sembuf.h \
   include/linux/rcupdate.h \
     $(wildcard include/config/rcu/torture/test.h) \
     $(wildcard include/config/tree/rcu.h) \
@@ -329,10 +330,10 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/debug/objects/free.h) \
   include/linux/rcutree.h \
   include/linux/signal.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/signal.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/signal.h \
   include/asm-generic/signal-defs.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/sigcontext.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/siginfo.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/sigcontext.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/siginfo.h \
   include/asm-generic/siginfo.h \
   include/linux/pid.h \
   include/linux/percpu.h \
@@ -340,7 +341,7 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/need/per/cpu/page/first/chunk.h) \
     $(wildcard include/config/have/setup/per/cpu/area.h) \
   include/linux/pfn.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/percpu.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/percpu.h \
   include/asm-generic/percpu.h \
   include/linux/percpu-defs.h \
     $(wildcard include/config/debug/force/weak/per/cpu.h) \
@@ -377,7 +378,7 @@ deps_arch/arm/kernel/asm-offsets.s := \
   include/linux/mutex.h \
     $(wildcard include/config/have/arch/mutex/cpu/relax.h) \
   include/linux/srcu.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/topology.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/topology.h \
   include/asm-generic/topology.h \
   include/linux/proportions.h \
   include/linux/percpu_counter.h \
@@ -389,7 +390,7 @@ deps_arch/arm/kernel/asm-offsets.s := \
   include/linux/plist.h \
     $(wildcard include/config/debug/pi/list.h) \
   include/linux/resource.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/resource.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/resource.h \
   include/asm-generic/resource.h \
   include/linux/timer.h \
     $(wildcard include/config/timer/stats.h) \
@@ -432,11 +433,11 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/debug/locking/api/selftests.h) \
   include/linux/range.h \
   include/linux/bit_spinlock.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/pgtable.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/pgtable.h \
     $(wildcard include/config/highpte.h) \
   include/asm-generic/4level-fixup.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/proc-fns.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/glue-proc.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/proc-fns.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/glue-proc.h \
     $(wildcard include/config/cpu/arm610.h) \
     $(wildcard include/config/cpu/arm7tdmi.h) \
     $(wildcard include/config/cpu/arm710.h) \
@@ -458,7 +459,7 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/cpu/v6k.h) \
     $(wildcard include/config/cpu/v7.h) \
   arch/arm/mach-rk30/include/mach/vmalloc.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/pgtable-hwdef.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/pgtable-hwdef.h \
   include/asm-generic/pgtable.h \
   include/linux/page-flags.h \
     $(wildcard include/config/pageflags/extended.h) \
@@ -496,19 +497,19 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/constructors.h) \
     $(wildcard include/config/debug/set/module/ronx.h) \
   include/linux/stat.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/stat.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/stat.h \
   include/linux/kmod.h \
   include/linux/elf.h \
   include/linux/elf-em.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/elf.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/user.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/elf.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/user.h \
   include/linux/moduleparam.h \
     $(wildcard include/config/alpha.h) \
     $(wildcard include/config/ppc64.h) \
   include/linux/tracepoint.h \
   include/linux/jump_label.h \
     $(wildcard include/config/jump/label.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/module.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/module.h \
     $(wildcard include/config/arm/unwind.h) \
   include/trace/events/module.h \
   include/trace/define_trace.h \
@@ -516,7 +517,7 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/pm.h) \
     $(wildcard include/config/pm/sleep.h) \
     $(wildcard include/config/pm/runtime.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/device.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/device.h \
     $(wildcard include/config/dmabounce.h) \
   include/linux/pm_wakeup.h \
   include/linux/err.h \
@@ -524,27 +525,27 @@ deps_arch/arm/kernel/asm-offsets.s := \
   include/linux/bug.h \
   include/linux/scatterlist.h \
     $(wildcard include/config/debug/sg.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/scatterlist.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/scatterlist.h \
   include/asm-generic/scatterlist.h \
     $(wildcard include/config/need/sg/dma/length.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/io.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/dma-mapping.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/io.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/dma-mapping.h \
   include/linux/dma-debug.h \
     $(wildcard include/config/dma/api/debug.h) \
   include/asm-generic/dma-coherent.h \
     $(wildcard include/config/have/generic/dma/coherent.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/cacheflush.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/cacheflush.h \
     $(wildcard include/config/smp/on/up.h) \
     $(wildcard include/config/arm/errata/411920.h) \
     $(wildcard include/config/cpu/cache/vipt.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/glue-cache.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/glue-cache.h \
     $(wildcard include/config/cpu/cache/v3.h) \
     $(wildcard include/config/cpu/cache/v4.h) \
     $(wildcard include/config/cpu/cache/v4wb.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/shmparam.h \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/cachetype.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/shmparam.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/cachetype.h \
     $(wildcard include/config/cpu/cache/vivt.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/glue-df.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/glue-df.h \
     $(wildcard include/config/cpu/abrt/lv4t.h) \
     $(wildcard include/config/cpu/abrt/ev4.h) \
     $(wildcard include/config/cpu/abrt/ev4t.h) \
@@ -552,13 +553,13 @@ deps_arch/arm/kernel/asm-offsets.s := \
     $(wildcard include/config/cpu/abrt/ev5t.h) \
     $(wildcard include/config/cpu/abrt/ev6.h) \
     $(wildcard include/config/cpu/abrt/ev7.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/glue-pf.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/glue-pf.h \
     $(wildcard include/config/cpu/pabrt/legacy.h) \
     $(wildcard include/config/cpu/pabrt/v6.h) \
     $(wildcard include/config/cpu/pabrt/v7.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/mach/arch.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/mach/arch.h \
     $(wildcard include/config/multi/irq/handler.h) \
-  /media/florian/android_compile/kernel/arch/arm/include/asm/procinfo.h \
+  /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include/asm/procinfo.h \
   include/linux/kbuild.h \
 
 arch/arm/kernel/asm-offsets.s: $(deps_arch/arm/kernel/asm-offsets.s)

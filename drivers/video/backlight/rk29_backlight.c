@@ -22,13 +22,10 @@
 #include <linux/backlight.h>
 #include <linux/fb.h>
 #include <linux/clk.h>
-#include <linux/irq.h>
 
 #include <linux/earlysuspend.h>
 #include <asm/io.h>
 #include <mach/board.h>
-#include <mach/gpio.h>
-#include <mach/iomux.h>
 
 #include "rk2818_backlight.h"
 
@@ -44,6 +41,11 @@
 #if defined(CONFIG_ARCH_RK30)
 #define write_pwm_reg(id, addr, val)        __raw_writel(val, addr+(RK30_PWM01_BASE+(id>>1)*0x20000)+id*0x10)
 #define read_pwm_reg(id, addr)              __raw_readl(addr+(RK30_PWM01_BASE+(id>>1)*0x20000+id*0x10))
+
+#elif defined(CONFIG_ARCH_RK2928)
+#define write_pwm_reg(id, addr, val)        __raw_writel(val, addr+(RK2928_PWM_BASE+id*0x10))
+#define read_pwm_reg(id, addr)              __raw_readl(addr+(RK2928_PWM_BASE+id*0x10))
+
 #elif defined(CONFIG_ARCH_RK29)
 #define write_pwm_reg(id, addr, val)        __raw_writel(val, addr+(RK29_PWM_BASE+id*0x10))
 #define read_pwm_reg(id, addr)              __raw_readl(addr+(RK29_PWM_BASE+id*0x10))    
@@ -52,6 +54,9 @@
 static struct clk *pwm_clk;
 static struct backlight_device *rk29_bl;
 static int suspend_flag = 0;
+
+extern int dwc_otg_check_dpdm(void);
+
 
 int convertint(char s[])  
 {  
@@ -118,9 +123,6 @@ static int rk29_bl_update_status(struct backlight_device *bl)
 	if (bl->props.fb_blank != FB_BLANK_UNBLANK)
 		brightness = 0;	
 
-	if (bl->props.state & BL_CORE_DRIVER3)
-		brightness = 0;	
-
 	if ((bl->props.state & BL_CORE_DRIVER2) && !suspend_flag ){
 		brightness = 0;
 		suspend_flag = 1;
@@ -183,6 +185,7 @@ static struct backlight_ops rk29_bl_ops = {
 
 static void rk29_backlight_work_func(struct work_struct *work)
 {
+	rk29_bl->props.state &= ~BL_CORE_DRIVER2;
 	rk29_bl_update_status(rk29_bl);
 }
 static DECLARE_DELAYED_WORK(rk29_backlight_work, rk29_backlight_work_func);
@@ -209,7 +212,6 @@ static void rk29_bl_resume(struct early_suspend *h)
 {
 	struct rk29_bl_info *rk29_bl_info = bl_get_data(rk29_bl);
 	DBG("%s : %s\n", __FILE__, __FUNCTION__);
-	rk29_bl->props.state &= ~BL_CORE_DRIVER2;
 	
 	schedule_delayed_work(&rk29_backlight_work, msecs_to_jiffies(rk29_bl_info->delay_ms));
 }
@@ -220,22 +222,13 @@ static struct early_suspend bl_early_suspend = {
 	.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN - 1,
 };
 
-bool rk29_get_backlight_status()
-{
-	return (rk29_bl->props.state & BL_CORE_DRIVER3)?true:false;
-}
-EXPORT_SYMBOL(rk29_get_backlight_status);
-
 void rk29_backlight_set(bool on)
 {
 	printk("%s: set %d\n", __func__, on);
-	if(on){
-		rk29_bl->props.state &= ~BL_CORE_DRIVER3;
-		rk29_bl_update_status(rk29_bl);
-	}else{
-		rk29_bl->props.state |= BL_CORE_DRIVER3;
-		rk29_bl_update_status(rk29_bl);
-	}
+	if(on)
+		rk29_bl_resume(NULL);
+	else
+		rk29_bl_suspend(NULL);
 	return;
 }
 EXPORT_SYMBOL(rk29_backlight_set);
@@ -249,6 +242,7 @@ static int rk29_backlight_probe(struct platform_device *pdev)
 	u32 divh, div_total;
 	unsigned long pwm_clk_rate;
 	struct backlight_properties props;
+	int pre_div = PWM_APB_PRE_DIV;
 
 	if (rk29_bl) {
 		printk(KERN_CRIT "%s: backlight device register has existed \n",
@@ -266,6 +260,9 @@ static int rk29_backlight_probe(struct platform_device *pdev)
 		rk29_bl_info->io_init();
 	}
 
+	if(rk29_bl_info->pre_div > 0)
+		pre_div = rk29_bl_info->pre_div;
+
 	memset(&props, 0, sizeof(struct backlight_properties));
 	props.type = BACKLIGHT_RAW;
 	props.max_brightness = BL_STEP;
@@ -278,18 +275,18 @@ static int rk29_backlight_probe(struct platform_device *pdev)
 
 #if defined(CONFIG_ARCH_RK29)
 	pwm_clk = clk_get(NULL, "pwm");
-#elif defined(CONFIG_ARCH_RK30)
+#elif defined(CONFIG_ARCH_RK30) || defined(CONFIG_ARCH_RK2928)
 	if (id == 0 || id == 1)
 		pwm_clk = clk_get(NULL, "pwm01");
 	else if (id == 2 || id == 3)
 		pwm_clk = clk_get(NULL, "pwm23");
 #endif
-	if (IS_ERR(pwm_clk)) {
+	if (IS_ERR(pwm_clk) || !pwm_clk) {
 		printk(KERN_ERR "failed to get pwm clock source\n");
 		return -ENODEV;
 	}
 	pwm_clk_rate = clk_get_rate(pwm_clk);
-	div_total = pwm_clk_rate / PWM_APB_PRE_DIV;
+	div_total = pwm_clk_rate / pre_div;
 
 	div_total >>= (1 + (PWM_DIV >> 9));
 	div_total = (div_total) ? div_total : 1;
@@ -309,7 +306,14 @@ static int rk29_backlight_probe(struct platform_device *pdev)
 
 	rk29_bl->props.power = FB_BLANK_UNBLANK;
 	rk29_bl->props.fb_blank = FB_BLANK_UNBLANK;
-	rk29_bl->props.brightness = BL_STEP / 2;
+	
+//	if((dwc_otg_check_dpdm() == 0) || (board_boot_mode() == BOOT_MODE_REBOOT)){
+		rk29_bl->props.brightness = BL_STEP / 2;
+//	}else{
+//		rk29_bl->props.brightness =5;
+
+//	}
+
 	rk29_bl->props.state = BL_CORE_DRIVER1;		
 
 	schedule_delayed_work(&rk29_backlight_work, msecs_to_jiffies(rk29_bl_info->delay_ms));
@@ -319,13 +323,8 @@ static int rk29_backlight_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to create sysfs file\n");
 	}
 
-#ifdef CONFIG_HAS_EARLYSUSPEND  
 	register_early_suspend(&bl_early_suspend);
-#endif
-	mdelay( 500 );
-	if (rk29_bl_info->pwm_resume)
-		rk29_bl_info->pwm_resume();
-	
+
 	printk("RK29 Backlight Driver Initialized.\n");
 	return ret;
 }
@@ -369,8 +368,6 @@ static void rk29_backlight_shutdown(struct platform_device *pdev)
 
 	if (rk29_bl_info && rk29_bl_info->io_deinit)
 		rk29_bl_info->io_deinit();
-
-	printk( "rk29_backlight_shutdown\n" );
 }
 
 static struct platform_driver rk29_backlight_driver = {

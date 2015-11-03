@@ -13,7 +13,7 @@
 @	compiled by GNU C version 4.5.2, GMP version 5.0.2, MPFR version 3.0.1-p4, MPC version 0.9
 @ GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
 @ options passed:  -nostdinc
-@ -I /media/florian/android_compile/kernel/arch/arm/include
+@ -I /media/florian/android_compile/rk3x_kernel_3.0.36/arch/arm/include
 @ -I arch/arm/include/generated -I include -I arch/arm/mach-rk30/include
 @ -I arch/arm/plat-rk/include
 @ -iprefix /media/florian/android_compile/rk/toolchains/arm-eabi-linaro-4.6.2/bin/../lib/gcc/arm-eabi/4.6.2/

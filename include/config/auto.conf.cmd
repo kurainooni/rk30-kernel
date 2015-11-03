@@ -94,6 +94,7 @@ deps_config := \
 	drivers/clk/Kconfig \
 	drivers/platform/x86/Kconfig \
 	drivers/platform/Kconfig \
+	drivers/staging/sn/Kconfig \
 	drivers/staging/nvec/Kconfig \
 	drivers/staging/mei/Kconfig \
 	drivers/staging/altera-stapl/Kconfig \
@@ -217,6 +218,7 @@ deps_config := \
 	drivers/mmc/core/Kconfig \
 	drivers/mmc/Kconfig \
 	drivers/uwb/Kconfig \
+	drivers/usb/drv_es603usb/Kconfig \
 	drivers/usb/dwc_otg/Kconfig \
 	drivers/usb/otg/Kconfig \
 	drivers/usb/gadget/Kconfig \
@@ -283,6 +285,7 @@ deps_config := \
 	sound/Kconfig \
 	drivers/video/logo/Kconfig \
 	drivers/video/console/Kconfig \
+	drivers/video/rockchip/lvds/Kconfig \
 	drivers/video/rockchip/rga/Kconfig \
 	drivers/video/rockchip/hdmi/chips/rk610/Kconfig \
 	drivers/video/rockchip/hdmi/chips/rk2928/Kconfig \
@@ -293,6 +296,7 @@ deps_config := \
 	drivers/video/rockchip/Kconfig \
 	drivers/video/hdmi/chips/Kconfig \
 	drivers/video/hdmi/Kconfig \
+	drivers/video/display/tve/rk1000/Kconfig \
 	drivers/video/display/tve/Kconfig \
 	drivers/video/display/transmitter/Kconfig \
 	drivers/video/display/screen/Kconfig \
@@ -304,6 +308,9 @@ deps_config := \
 	drivers/video/omap2/Kconfig \
 	drivers/video/omap/Kconfig \
 	drivers/video/geode/Kconfig \
+	drivers/gpu/mali/ump/Kconfig \
+	drivers/gpu/mali/mali/Kconfig \
+	drivers/gpu/mali/Kconfig \
 	drivers/gpu/ion/Kconfig \
 	drivers/gpu/stub/Kconfig \
 	drivers/gpu/drm/radeon/Kconfig \
@@ -412,6 +419,8 @@ deps_config := \
 	drivers/input/gsensor/Kconfig \
 	drivers/input/magnetometer/Kconfig \
 	drivers/input/misc/Kconfig \
+	drivers/input/ts/chips/Kconfig \
+	drivers/input/ts/Kconfig \
 	drivers/input/touchscreen/rmi4/Kconfig \
 	drivers/input/touchscreen/Kconfig \
 	drivers/input/tablet/Kconfig \
@@ -447,10 +456,29 @@ deps_config := \
 	drivers/net/wimax/Kconfig \
 	drivers/net/wireless/rkwifi/Kconfig \
 	drivers/net/wireless/ar6003/Kconfig \
-	drivers/net/wireless/rkusbwifi/rt5370/Kconfig \
 	drivers/net/wireless/rkusbwifi/rtl8188eu/Kconfig \
 	drivers/net/wireless/rkusbwifi/rtl8192cu/Kconfig \
-	drivers/net/wireless/mt5931/Kconfig \
+	drivers/net/wireless/bcm40181/Kconfig \
+	drivers/net/wireless/mwifiex/Kconfig \
+	drivers/net/wireless/zd1211rw/Kconfig \
+	drivers/net/wireless/wl12xx/Kconfig \
+	drivers/net/wireless/wl1251/Kconfig \
+	drivers/net/wireless/rt2x00/Kconfig \
+	drivers/net/wireless/p54/Kconfig \
+	drivers/net/wireless/orinoco/Kconfig \
+	drivers/net/wireless/libertas/Kconfig \
+	drivers/net/wireless/iwmc3200wifi/Kconfig \
+	drivers/net/wireless/iwlegacy/Kconfig \
+	drivers/net/wireless/iwlwifi/Kconfig \
+	drivers/net/wireless/ipw2x00/Kconfig \
+	drivers/net/wireless/hostap/Kconfig \
+	drivers/net/wireless/b43legacy/Kconfig \
+	drivers/net/wireless/b43/Kconfig \
+	drivers/net/wireless/ath/carl9170/Kconfig \
+	drivers/net/wireless/ath/ath9k/Kconfig \
+	drivers/net/wireless/ath/ath5k/Kconfig \
+	drivers/net/wireless/ath/Kconfig \
+	drivers/net/wireless/rtl818x/Kconfig \
 	drivers/net/wireless/Kconfig \
 	drivers/net/tokenring/Kconfig \
 	drivers/net/benet/Kconfig \
@@ -495,6 +523,9 @@ deps_config := \
 	drivers/scsi/libsas/Kconfig \
 	drivers/scsi/Kconfig \
 	drivers/ide/Kconfig \
+	drivers/misc/rk2928_callpad_misc/Kconfig \
+	drivers/misc/bp/chips/Kconfig \
+	drivers/misc/bp/Kconfig \
 	drivers/misc/3g_module/Kconfig \
 	drivers/misc/carma/Kconfig \
 	drivers/misc/lis3lv02d/Kconfig \
@@ -504,6 +535,7 @@ deps_config := \
 	drivers/misc/inv_mpu/compass/Kconfig \
 	drivers/misc/inv_mpu/accel/Kconfig \
 	drivers/misc/inv_mpu/Kconfig \
+	drivers/misc/gps/rk_gps/Kconfig \
 	drivers/misc/gps/Kconfig \
 	drivers/misc/rk29_modem/Kconfig \
 	drivers/misc/cb710/Kconfig \
@@ -645,6 +677,7 @@ deps_config := \
 	arch/arm/plat-samsung/Kconfig \
 	arch/arm/mach-sa1100/Kconfig \
 	arch/arm/mach-rk30/Kconfig \
+	arch/arm/mach-rk2928/Kconfig \
 	arch/arm/mach-rk29/Kconfig \
 	arch/arm/plat-rk/Kconfig \
 	arch/arm/mach-realview/Kconfig \
@@ -703,7 +736,7 @@ deps_config := \
 include/config/auto.conf: \
 	$(deps_config)
 
-ifneq "$(KERNELVERSION)" "3.0.8+"
+ifneq "$(KERNELVERSION)" "3.0.36"
 include/config/auto.conf: FORCE
 endif
 ifneq "$(ARCH)" "arm"

@@ -91,6 +91,9 @@ snd-soc-rk1000-objs := rk1000_codec.o
 snd-soc-jz4740-codec-objs := jz4740.o
 snd-soc-rk610-objs := rk610_codec.o
 snd-soc-rt3261-objs := rt3261.o rt3261-dsp.o rt3261_ioctl.o rt_codec_ioctl.o
+snd-soc-rockchip-hdmi-objs := rockchip-hdmi-codec.o
+snd-soc-rt3224-objs := rt3261.o rt3261_ioctl.o rt_codec_ioctl.o
+snd-soc-rk2928-objs := rk2928_codec.o
 
 # Amp
 snd-soc-lm4857-objs := lm4857.o
@@ -99,6 +102,7 @@ snd-soc-tpa6130a2-objs := tpa6130a2.o
 snd-soc-wm2000-objs := wm2000.o
 snd-soc-wm9090-objs := wm9090.o
 obj-$(CONFIG_SND_SOC_RT3261)    += snd-soc-rt3261.o
+obj-$(CONFIG_SND_SOC_RT3224)    += snd-soc-rt3224.o
 obj-$(CONFIG_SND_SOC_88PM860X)	+= snd-soc-88pm860x.o
 obj-$(CONFIG_SND_SOC_AC97_CODEC)	+= snd-soc-ac97.o
 obj-$(CONFIG_SND_SOC_AD1836)	+= snd-soc-ad1836.o
@@ -190,7 +194,10 @@ obj-$(CONFIG_SND_SOC_WM9712)	+= snd-soc-wm9712.o
 obj-$(CONFIG_SND_SOC_WM9713)	+= snd-soc-wm9713.o
 obj-$(CONFIG_SND_SOC_WM_HUBS)	+= snd-soc-wm-hubs.o
 obj-$(CONFIG_SND_SOC_RK1000)	+= snd-soc-rk1000.o
-obj-$(CONFIG_SND_SOC_RK610)		+= snd-soc-rk610.o
+obj-$(CONFIG_SND_SOC_RK610)	+= snd-soc-rk610.o
+obj-$(CONFIG_SND_SOC_RK2928)	+= snd-soc-rk2928.o
+obj-$(CONFIG_SND_SOC_RK_HDMI_CODEC) += snd-soc-rockchip-hdmi.o
+
 # Amp
 obj-$(CONFIG_SND_SOC_LM4857)	+= snd-soc-lm4857.o
 obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o

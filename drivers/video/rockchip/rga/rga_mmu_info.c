@@ -24,7 +24,32 @@ extern rga_service_info rga_service;
 
 #define KERNEL_SPACE_VALID    0xc0000000
 
-int mmu_flag = 0;
+#define V7_VATOPA_SUCESS_MASK	(0x1)
+#define V7_VATOPA_GET_PADDR(X)	(X & 0xFFFFF000)
+#define V7_VATOPA_GET_INER(X)		((X>>4) & 7)
+#define V7_VATOPA_GET_OUTER(X)		((X>>2) & 3)
+#define V7_VATOPA_GET_SH(X)		((X>>7) & 1)
+#define V7_VATOPA_GET_NS(X)		((X>>9) & 1)
+#define V7_VATOPA_GET_SS(X)		((X>>1) & 1)
+
+#if 0
+static unsigned int armv7_va_to_pa(unsigned int v_addr)
+{
+	unsigned int p_addr;
+	__asm__ volatile (	"mcr p15, 0, %1, c7, c8, 0\n" 
+						"isb\n"
+						"dsb\n"
+						"mrc p15, 0, %0, c7, c4, 0\n"
+						: "=r" (p_addr)
+						: "r" (v_addr)
+						: "cc");
+
+	if (p_addr & V7_VATOPA_SUCESS_MASK)
+		return 0xFFFFFFFF;
+	else
+		return (V7_VATOPA_GET_SS(p_addr) ? 0xFFFFFFFF : V7_VATOPA_GET_PADDR(p_addr));
+}
+#endif
 
 static int rga_mem_size_cal(uint32_t Mem, uint32_t MemSize, uint32_t *StartAddr) 
 {
@@ -222,9 +247,11 @@ static int rga_MapUserMemory(struct page **pages,
     uint32_t i;
     uint32_t status;
     uint32_t Address;
+    //uint32_t temp;
+    
     status = 0;
     Address = 0;
-
+    
     do
     {    
         down_read(&current->mm->mmap_sem);
@@ -239,6 +266,27 @@ static int rga_MapUserMemory(struct page **pages,
                 );
         up_read(&current->mm->mmap_sem);
 
+        #if 0                
+        if(result <= 0 || result < pageCount) 
+        {
+            status = 0;
+
+            for(i=0; i<pageCount; i++)
+            {   
+                temp = armv7_va_to_pa((Memory + i) << PAGE_SHIFT);
+                if (temp == 0xffffffff)
+                {
+                    printk("rga find mmu phy ddr error\n ");
+                    status = RGA_OUT_OF_RESOURCES;
+                    break;
+                }
+                
+                pageTable[i] = temp;                
+            }
+
+            return status;
+        }
+        #else
         if(result <= 0 || result < pageCount) 
         {
             struct vm_area_struct *vma;
@@ -247,7 +295,7 @@ static int rga_MapUserMemory(struct page **pages,
             {                
                 vma = find_vma(current->mm, (Memory + i) << PAGE_SHIFT);
 
-                if (vma && (vma->vm_flags & VM_PFNMAP) )
+                if (vma)//&& (vma->vm_flags & VM_PFNMAP) )
                 {
                     do
                     {
@@ -261,7 +309,7 @@ static int rga_MapUserMemory(struct page **pages,
 
                         if(pgd_val(*pgd) == 0)
                         {
-                            printk("pgd value is zero \n");
+                            printk("rga pgd value is zero \n");
                             break;
                         }
                         
@@ -301,23 +349,10 @@ static int rga_MapUserMemory(struct page **pages,
                     break;
                 }     
             }
-
-            return 0;
+            
+            return status;
         }
-
-        for (i = 0; i < pageCount; i++)
-        {
-            /* Flush the data cache. */
-#ifdef ANDROID
-            dma_sync_single_for_device(
-                        NULL,
-                        page_to_phys(pages[i]),
-                        PAGE_SIZE,
-                        DMA_TO_DEVICE);
-#else
-            flush_dcache_page(pages[i]);
-#endif
-        }
+        #endif
 
         /* Fill the page table. */
         for(i=0; i<pageCount; i++) 
@@ -329,30 +364,7 @@ static int rga_MapUserMemory(struct page **pages,
         return 0;
     }
     while(0);
-
-    if (rgaIS_ERROR(status))
-    {
-        /* Release page array. */
-        if (result > 0 && pages != NULL)
-        {
-            for (i = 0; i < result; i++)
-            {
-                if (pages[i] == NULL)
-                {
-                    break;
-                }
-#ifdef ANDROID
-                dma_sync_single_for_device(
-                            NULL,
-                            page_to_phys(pages[i]),
-                            PAGE_SIZE,
-                            DMA_FROM_DEVICE);
-#endif
-                page_cache_release(pages[i]);
-            }
-        }
-    }
-
+    
     return status;
 }
 
@@ -392,14 +404,14 @@ static int rga_mmu_info_BitBlt_mode(struct rga_reg *reg, struct rga_req *req)
         /* Cal out the needed mem size */
         AllSize = SrcMemSize + DstMemSize;
                            
-        pages = kmalloc((AllSize + 1)* sizeof(struct page *), GFP_KERNEL);
+        pages = kzalloc((AllSize + 1)* sizeof(struct page *), GFP_KERNEL);
         if(pages == NULL) {
             pr_err("RGA MMU malloc pages mem failed\n");
             status = RGA_MALLOC_ERROR;
             break;                
         }
         
-        MMU_Base = kmalloc((AllSize + 1) * sizeof(uint32_t), GFP_KERNEL);
+        MMU_Base = kzalloc((AllSize + 1) * sizeof(uint32_t), GFP_KERNEL);
         if(MMU_Base == NULL) {
             pr_err("RGA MMU malloc MMU_Base point failed\n");
             status = RGA_MALLOC_ERROR;
@@ -407,7 +419,7 @@ static int rga_mmu_info_BitBlt_mode(struct rga_reg *reg, struct rga_req *req)
         }
 
         if(req->src.yrgb_addr < KERNEL_SPACE_VALID)
-        {            
+        {               
             ret = rga_MapUserMemory(&pages[0], &MMU_Base[0], SrcStart, SrcMemSize);
             if (ret < 0) {
                 pr_err("rga map src memory failed\n");
@@ -443,7 +455,7 @@ static int rga_mmu_info_BitBlt_mode(struct rga_reg *reg, struct rga_req *req)
             #if 0
             ktime_t start, end;
             start = ktime_get();
-            #endif
+            #endif            
             ret = rga_MapUserMemory(&pages[SrcMemSize], &MMU_Base[SrcMemSize], DstStart, DstMemSize);
             if (ret < 0) {
                 pr_err("rga map dst memory failed\n");
@@ -1068,7 +1080,7 @@ static int rga_mmu_info_pre_scale_mode(struct rga_reg *reg, struct rga_req *req)
             {
                 for(i=0; i<DstMemSize; i++) 
                 {
-                    MMU_p[i] = virt_to_phys((uint32_t *)((DstStart + i)<< PAGE_SHIFT));        
+                    MMU_p[i] = virt_to_phys((uint32_t *)((DstStart + i) << PAGE_SHIFT));        
                 }    
             }                                    
         }

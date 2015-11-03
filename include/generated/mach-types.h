@@ -559,8 +559,8 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_SMDKV310             2925
 #define MACH_TYPE_SIEMENS_L0           2926
 #define MACH_TYPE_VENTANA              2927
-#define MACH_TYPE_WM8505_7IN_NETBOOK   2928
 #define MACH_TYPE_RK29                 2929
+#define MACH_TYPE_RK2928               2928
 #define MACH_TYPE_RK30                 3066
 #define MACH_TYPE_MIMAS                2930
 #define MACH_TYPE_TITAN                2931
@@ -7670,18 +7670,6 @@ extern unsigned int __machine_arch_type;
 # define machine_is_ventana()	(0)
 #endif
 
-#ifdef CONFIG_MACH_WM8505_7IN_NETBOOK
-# ifdef machine_arch_type
-#  undef machine_arch_type
-#  define machine_arch_type	__machine_arch_type
-# else
-#  define machine_arch_type	MACH_TYPE_WM8505_7IN_NETBOOK
-# endif
-# define machine_is_wm8505_7in_netbook()	(machine_arch_type == MACH_TYPE_WM8505_7IN_NETBOOK)
-#else
-# define machine_is_wm8505_7in_netbook()	(0)
-#endif
-
 #ifdef CONFIG_MACH_RK29
 # ifdef machine_arch_type
 #  undef machine_arch_type
@@ -7692,6 +7680,18 @@ extern unsigned int __machine_arch_type;
 # define machine_is_rk29()	(machine_arch_type == MACH_TYPE_RK29)
 #else
 # define machine_is_rk29()	(0)
+#endif
+
+#ifdef CONFIG_ARCH_RK2928
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_RK2928
+# endif
+# define machine_is_rk2928()	(machine_arch_type == MACH_TYPE_RK2928)
+#else
+# define machine_is_rk2928()	(0)
 #endif
 
 #ifdef CONFIG_ARCH_RK30

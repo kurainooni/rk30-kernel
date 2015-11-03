@@ -178,7 +178,7 @@ static int goodix_init_panel(struct rk_ts_data *ts)
 	int ret=-1, retry = 10;
 	uint8_t rd_cfg_buf[7] = {0x66,};
 
-#if (TS_MAX_X == 1024)&&(TS_MAX_Y == 768)			//for malata 10.1
+#if (TS_MAX_X == 1024)&&(TS_MAX_Y == 768)			//for BQ 10.1
 	uint8_t config_info[] = {
 		0x65,0x02,0x04,0x00,0x03,0x00,0x0A,0x22,0x1E,0xE7,0x32,0x05,0x08,0x10,0x4C,
 		0x41,0x41,0x20,0x09,0x00,0xA0,0xA0,0x3C,0x64,0x0E,0x0D,0x0C,0x0B,0x0A,0x09,
@@ -715,10 +715,10 @@ static int goodix_ts_init(struct rk_ts_data *ts)
 	{
 		printk(KERN_INFO"Read version data failed!\n");
 	}
-//	else
-//	{
-//		printk("goodix_ts_init: version %s\n", (version_info+1));
-//	}
+	else
+	{
+		printk("goodix_ts_init: version %s\n", (version_info+1));
+	}
 	vfree(version_info);
 	#ifdef CONFIG_TOUCHSCREEN_GOODIX_IAP
 	goodix_proc_entry = create_proc_entry("goodix-update", 0666, NULL);

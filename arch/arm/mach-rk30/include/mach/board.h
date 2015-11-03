@@ -12,71 +12,6 @@
 #include <mach/sram.h>
 #include <linux/i2c-gpio.h>
 
-#ifdef CONFIG_BATTERY_RK3066
-/*battery*/
-struct rk3066_battery_platform_data {
-	int (*io_init)(void);
-	int (*io_deinit)(void);
-	int dc_det_pin;
-	int dc_det_level;
-	int batt_low_pin;
-	int charge_ok_pin;
-	int charge_ok_level;
-	int notebook_dc_dec_pin;
-};
-#endif
-
-#ifdef CONFIG_NOTEBOOK
-struct rk3066_notebook_platform_data {
-	int (*io_init)(void);
-	int (*io_deinit)(void);
-	int pad_det_pin;
-	int pad_det_level;
-	int notebook_pin;
-	int notebook_level;
-	int notebook_power;      //底坐电源
-	int notebook_power_pad;  //底坐对pad供电
-	int notebook_charge_pad; //底坐对pad充电
-
-	int notebook_dc_det; //底坐DC检测
-	int notebook_charge_ok; //底坐充电OK
-	int notebook_low_battery; //底坐电量底
-	int notebook_low_battery_led; //底坐底电电量控制
-};
-#endif
-#ifdef CONFIG_BATTERY_RK30_ADC
-struct rk30_adc_battery_platform_data {
-        int (*io_init)(void);
-        int (*io_deinit)(void);
-
-        int dc_det_pin;
-        int batt_low_pin;
-        int charge_ok_pin;
-        int charge_set_pin;
-
-//        int adc_channel;
-
-        int dc_det_level;
-        int batt_low_level;
-        int charge_ok_level;
-        int charge_set_level;
-};
-#endif
-
-#if defined (CONFIG_INPUT_LIGHTSENSOR_BPW16N)
-/*lightsensor bpw16n */
-struct bpw16n_platform_data {
-       int DATA_ADC_CHN;
-};
-#endif
-
-#if defined (CONFIG_TOUCHSCREEN_CT36X)
-struct ct36x_ts_info_platform {
-	int irq;
-	int rst;
-};
-#endif
-
 #ifndef _LINUX_WLAN_PLAT_H_
 struct wifi_platform_data {
         int (*set_power)(int val);
@@ -87,25 +22,22 @@ struct wifi_platform_data {
 };
 #endif
 
-#if defined (CONFIG_I2C_FT5X0X)
-struct ft5x0x_platform_data{
-	u16     model;
-	int     (*get_pendown_state)(void);
-	int     (*init_platform_hw)(void);
-	int     (*platform_sleep)(void);
-	int     (*platform_wakeup)(void);
-	void    (*exit_platform_hw)(void);
-};
-#endif
-
 #if defined (CONFIG_TOUCHSCREEN_FT5306)
 struct ft5x0x_platform_data{
-	  u16     model;
-    int     (*get_pendown_state)(void);
-    int     (*init_platform_hw)(void);
-    int     (*ft5x0x_platform_sleep)(void);
-    int     (*ft5x0x_platform_wakeup)(void);
-    void    (*exit_platform_hw)(void);
+	u16     model;
+	int	max_x;
+	int	max_y;
+	int	key_min_x;
+	int	key_min_y;
+	int	xy_swap;
+	int	x_revert;
+	int	y_revert;
+	int     (*get_pendown_state)(void);
+	int     (*init_platform_hw)(void);
+	int     (*ft5x0x_platform_sleep)(void);
+	int     (*ft5x0x_platform_wakeup)(void);  
+	void    (*exit_platform_hw)(void);
+
 };
 #endif
 
@@ -129,6 +61,12 @@ struct rt3261_platform_data{
 	unsigned int codec_en_gpio;
 	struct codec_io_info codec_en_gpio_info;
 	int (*io_init)(int, char *, int);
+	unsigned int spk_num;
+	unsigned int modem_input_mode;
+	unsigned int lout_to_modem_mode;
+	unsigned int spk_amplify;
+	unsigned int playback_if1_data_control;
+	unsigned int playback_if2_data_control;
 };
 
 extern struct rk29_sdmmc_platform_data default_sdmmc0_data;
@@ -149,12 +87,20 @@ void board_gpio_resume(void);
 void __sramfunc board_pmu_suspend(void);
 void __sramfunc board_pmu_resume(void);
 
+#ifdef CONFIG_RK30_PWM_REGULATOR
+void  rk30_pwm_suspend_voltage_set(void);
+void  rk30_pwm_resume_voltage_set(void);
+void __sramfunc rk30_pwm_logic_suspend_voltage(void);
+ void __sramfunc rk30_pwm_logic_resume_voltage(void);
+#endif
+
 extern struct sys_timer rk30_timer;
 
 enum _periph_pll {
 	periph_pll_1485mhz = 148500000,
 	periph_pll_297mhz = 297000000,
 	periph_pll_300mhz = 300000000,
+	periph_pll_594mhz = 594000000,
 	periph_pll_1188mhz = 1188000000, /* for box*/
 };
 enum _codec_pll {
@@ -168,6 +114,7 @@ enum _codec_pll {
 	codec_pll_768mhz = 768000000,
 	codec_pll_798mhz = 798000000,
 	codec_pll_1188mhz = 1188000000,
+	codec_pll_1200mhz = 1200000000,
 };
 
 //has extern 27mhz
@@ -184,17 +131,19 @@ enum _codec_pll {
 
 #ifdef CONFIG_RK29_VMAC
 
-#define RK30_CLOCKS_DEFAULT_FLAGS (CLK_FLG_MAX_I2S_12288KHZ/*|CLK_FLG_EXT_27MHZ*/|CLK_CPU_HPCLK_11)
+#define RK30_CLOCKS_DEFAULT_FLAGS (CLK_FLG_MAX_I2S_12288KHZ/*|CLK_FLG_EXT_27MHZ*/)
 #define periph_pll_default periph_pll_300mhz
 #define codec_pll_default codec_pll_1188mhz
 
 #else
 
-#define RK30_CLOCKS_DEFAULT_FLAGS (CLK_FLG_MAX_I2S_12288KHZ/*|CLK_FLG_EXT_27MHZ*/|CLK_CPU_HPCLK_11)
+
+#define RK30_CLOCKS_DEFAULT_FLAGS (CLK_FLG_MAX_I2S_12288KHZ/*|CLK_FLG_EXT_27MHZ*/)
+
 #if (RK30_CLOCKS_DEFAULT_FLAGS&CLK_FLG_UART_1_3M)
 #define codec_pll_default codec_pll_768mhz
 #else
-#define codec_pll_default codec_pll_798mhz
+#define codec_pll_default codec_pll_1200mhz
 #endif
 #define periph_pll_default periph_pll_297mhz
 

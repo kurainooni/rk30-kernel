@@ -1134,12 +1134,8 @@ static int32_t handle_hc_xfercomp_intr(dwc_otg_hcd_t *_hcd,
 		break;
 	case PIPE_INTERRUPT:
 		DWC_DEBUGPL(DBG_HCDV, "  Interrupt transfer complete\n");
-		urb_xfer_done = update_urb_state_xfer_comp(_hc, _hc_regs, urb, _qtd);
-		if(!urb_xfer_done){
-		    save_data_toggle(_hc, _hc_regs, _qtd);
-    		halt_channel(_hcd, _hc, _qtd, DWC_OTG_HC_XFER_NAK);
-    		break;
-		}
+		update_urb_state_xfer_comp(_hc, _hc_regs, urb, _qtd);
+
 		/*
 		 * Interrupt URB is done on the first transfer complete
 		 * interrupt.
@@ -1301,8 +1297,6 @@ static int32_t handle_hc_nak_intr(dwc_otg_hcd_t *_hcd,
 		break;
 	case PIPE_INTERRUPT:
 		_qtd->error_count = 0;
-        update_urb_state_xfer_intr(_hc, _hc_regs, _qtd->urb,_qtd, DWC_OTG_HC_XFER_NAK);
-        save_data_toggle(_hc, _hc_regs, _qtd);
 		halt_channel(_hcd, _hc, _qtd, DWC_OTG_HC_XFER_NAK);
 		break;
 	case PIPE_ISOCHRONOUS:
@@ -1837,17 +1831,10 @@ static void handle_hc_chhltd_intr_dma(dwc_otg_hcd_t *_hcd,
 		 */
 		handle_hc_ack_intr(_hcd, _hc, _hc_regs, _qtd);
 	} else if(hcint.b.datatglerr){
-//	     DWC_PRINT("%s, DATA toggle error, Channel %d\n",__func__, _hc->hc_num);
-//             save_data_toggle(_hc, _hc_regs, _qtd);
-//             halt_channel(_hcd, _hc, _qtd, DWC_OTG_HC_XFER_NO_HALT_STATUS);
-//				clear_hc_int(_hc_regs,chhltd);
-
-         DWC_PRINT("%s, DATA toggle error, Channel %d\n",__func__, _hc->hc_num);
-         _qtd->error_count++;
-         save_data_toggle(_hc, _hc_regs, _qtd);
-         halt_channel(_hcd, _hc, _qtd, DWC_OTG_HC_XFER_XACT_ERR);
-         clear_hc_int(_hc_regs,chhltd);
-
+	     DWC_PRINT("%s, DATA toggle error, Channel %d\n",__func__, _hc->hc_num);
+             save_data_toggle(_hc, _hc_regs, _qtd);
+             halt_channel(_hcd, _hc, _qtd, DWC_OTG_HC_XFER_NO_HALT_STATUS);
+				clear_hc_int(_hc_regs,chhltd);
 	} else {
 		if (_hc->ep_type == DWC_OTG_EP_TYPE_INTR ||
 		    _hc->ep_type == DWC_OTG_EP_TYPE_ISOC) {

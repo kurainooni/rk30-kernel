@@ -1011,7 +1011,6 @@ struct v4l2_ext_control {
 		__s64 value64;
 		char *string;
 	};
-	__s32 rect[4];
 } __attribute__ ((packed));
 
 struct v4l2_ext_controls {
@@ -1402,7 +1401,8 @@ enum  v4l2_exposure_auto_type {
 #define V4L2_CID_EFFECT				(V4L2_CID_CAMERA_CLASS_BASE_ROCK+2)
 #define V4L2_CID_FLASH				(V4L2_CID_CAMERA_CLASS_BASE_ROCK+3)
 #define V4L2_CID_FOCUS_CONTINUOUS		(V4L2_CID_CAMERA_CLASS_BASE_ROCK+4)
-#define V4L2_CID_FOCUSZONE       (V4L2_CID_CAMERA_CLASS_BASE_ROCK+5)
+// honghaishen_test hhs_1225
+#define V4L2_CID_OPEN_FLASH		(V4L2_CID_CAMERA_CLASS_BASE_ROCK+5)
 
 /* FM Modulator class control IDs */
 #define V4L2_CID_FM_TX_CLASS_BASE		(V4L2_CTRL_CLASS_FM_TX | 0x900)

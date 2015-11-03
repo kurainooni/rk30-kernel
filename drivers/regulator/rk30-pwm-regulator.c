@@ -67,6 +67,9 @@ struct rk_pwm_dcdc {
 #elif defined(CONFIG_ARCH_RK29)
 #define pwm_write_reg(id, addr, val)        __raw_writel(val, addr+(RK29_PWM_BASE+id*0x10))
 #define pwm_read_reg(id, addr)              __raw_readl(addr+(RK29_PWM_BASE+id*0x10))    
+#elif defined(CONFIG_ARCH_RK2928)
+#define pwm_write_reg(id, addr, val)        __raw_writel(val, addr+(RK2928_PWM_BASE+id*0x10))
+#define pwm_read_reg(id, addr)              __raw_readl(addr+(RK2928_PWM_BASE+id*0x10))
 #endif
 
 const static int pwm_voltage_map[] = {
@@ -81,19 +84,21 @@ static int pwm_set_rate(struct pwm_platform_data *pdata,int nHz,u32 rate)
 	u32 divh,divTotal;
 	int id = pdata->pwm_id;
 	unsigned long clkrate;
-	
-	if ( id >3 || id <0 )
-	{
+
+#if defined(CONFIG_ARCH_RK29) || defined(CONFIG_ARCH_RK2928)
+	clkrate = clk_get_rate(pwm_clk[0]);
+#elif defined(CONFIG_ARCH_RK30)
+	if (id == 0 || id == 1) {
+		clkrate = clk_get_rate(pwm_clk[0]);
+	} else if (id== 2 || id == 3) {
+		clkrate = clk_get_rate(pwm_clk[1]);
+	} else {
 		printk("%s:pwm id error,id=%d\n",__func__,id);
 		return -1;
 	}
-
-	if((id==0) || (id == 1))
-	clkrate = clk_get_rate(pwm_clk[0]);
-	else	
-	clkrate = clk_get_rate(pwm_clk[1]);
+#endif
 	
-	DBG("%s:id=%d,rate=%d,clkrate=%d\n",__func__,id,rate,clkrate);
+	DBG("%s:id=%d,rate=%d,clkrate=%d\n",__func__,id,rate,clkrate); 
 
 	if(rate == 0)
 	{
@@ -255,7 +260,8 @@ static int __devinit pwm_regulator_probe(struct platform_device *pdev)
 	int id = pdev->id;
 	int ret ;
     	char gpio_name[20];
-
+	unsigned selector = 0;
+	
 	if (!pdata)
 		return -ENODEV;
 
@@ -321,21 +327,20 @@ static int __devinit pwm_regulator_probe(struct platform_device *pdev)
 			pwm_clk[1] = clk_get(NULL, "pwm23");		
 			clk_enable(pwm_clk[1]);
 		}
+#elif defined(CONFIG_ARCH_RK2928)
+		pwm_clk[0] = clk_get(NULL, "pwm01");
+		if (IS_ERR(pwm_clk[0])) {
+			printk("pwm_clk get error %p\n", pwm_clk[0]);
+			return -EINVAL;
+		}
+		clk_enable(pwm_clk[0]);
 #endif
 	
 	g_dcdc	= dcdc;
 	platform_set_drvdata(pdev, dcdc);	
-	printk("pwm_regulator.%d: driver initialized\n",id);
-	printk("rk30 pwm regulator is ok with pmu tps65910\n");
-    #ifdef CONFIG_RK30_PWM_REGULATOR                              
-    dcdc = regulator_get(NULL, "vdd_core"); // vdd_log            
-    regulator_set_voltage(dcdc, 1100000, 1100000);
-    regulator_enable(dcdc);
-    printk("%s set vdd_core=%dmV end\n", __func__, regulator_get_voltage(dcdc));
-    regulator_put(dcdc);
-    udelay(100);                                                  
-    #endif	
-	
+	printk(KERN_INFO "pwm_regulator.%d: driver initialized\n",id);
+	pwm_regulator_set_voltage(dcdc->regulator,pdata->pwm_voltage,pdata->pwm_voltage,&selector);
+
 	return 0;
 
 
@@ -448,19 +453,10 @@ static struct platform_driver pwm_regulator_driver = {
 	.remove = __devexit_p(pwm_regulator_remove),
 };
 
-extern int __sramdata g_pmic_type;
+
 static int __init pwm_regulator_module_init(void)
 {
-	if (g_pmic_type == 2)
-	{	
-		printk("boot with tps65910 need  pwm_regultor\n");
-		return platform_driver_probe(&pwm_regulator_driver, pwm_regulator_probe);
-	}
-	else
-	{
-		printk("boot with wm831x dont need pwm_regultor\n");	
-		return 0;
-	}
+	return platform_driver_probe(&pwm_regulator_driver, pwm_regulator_probe);
 }
 
 static void __exit pwm_regulator_module_exit(void)

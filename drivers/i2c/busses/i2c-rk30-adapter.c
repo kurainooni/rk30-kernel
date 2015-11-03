@@ -490,7 +490,13 @@ static int rk30_i2c_doxfer(struct rk30_i2c *i2c,
 
         rk30_i2c_enable(i2c, (i2c->count > 32)?0:1); //if count > 32,  byte(32) send ack
 
-	timeout = wait_event_timeout(i2c->wait, (i2c->is_busy == 0), msecs_to_jiffies(I2C_WAIT_TIMEOUT));
+        if (in_atomic()){
+                int tmo = I2C_WAIT_TIMEOUT * USEC_PER_MSEC;
+                while(tmo-- && i2c->is_busy != 0)
+                        udelay(1);
+                timeout = (tmo <= 0)?0:1;
+        }else
+	        timeout = wait_event_timeout(i2c->wait, (i2c->is_busy == 0), msecs_to_jiffies(I2C_WAIT_TIMEOUT));
 
 	spin_lock_irqsave(&i2c->lock, flags);
         i2c->state = STATE_IDLE;
@@ -536,13 +542,15 @@ static int rk30_i2c_xfer(struct i2c_adapter *adap,
 	struct rk30_i2c *i2c = (struct rk30_i2c *)adap->algo_data;
 
         clk_enable(i2c->clk);
-        while(retry-- && ((state = i2c->check_idle()) != I2C_IDLE)){
+#ifdef I2C_CHECK_IDLE
+        while(retry-- && ((state = i2c->check_idle(i2c->adap.nr)) != I2C_IDLE)){
                 msleep(10);
         }
         if(retry == 0){
                 dev_err(i2c->dev, "i2c is not in idle(state = %d)\n", state);
                 return -EIO;
         }
+#endif
 
         if(msgs[0].scl_rate <= 400000 && msgs[0].scl_rate >= 10000)
 		scl_rate = msgs[0].scl_rate;
@@ -558,7 +566,6 @@ static int rk30_i2c_xfer(struct i2c_adapter *adap,
 	}
         if(i2c->is_div_from_arm[i2c->adap.nr]){
                 mutex_lock(&i2c->m_lock);
-		wake_lock(&i2c->idlelock[i2c->adap.nr]);
         }
 
 	rk30_i2c_set_clk(i2c, scl_rate);
@@ -567,7 +574,6 @@ static int rk30_i2c_xfer(struct i2c_adapter *adap,
         i2c_dbg(i2c->dev, "i2c transfer stop: addr: 0x%x, state: %d, ret: %d\n", msgs[0].addr, ret, i2c->state);
 
         if(i2c->is_div_from_arm[i2c->adap.nr]){
-		wake_unlock(&i2c->idlelock[i2c->adap.nr]);
                 mutex_unlock(&i2c->m_lock);
         }
 

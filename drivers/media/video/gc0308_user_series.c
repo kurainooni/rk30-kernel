@@ -1,5 +1,5 @@
 
-#if defined(CONFIG_MACH_RK30_PHONE_PAD) || defined(CONFIG_MACH_RK30_JBS_PHONE) || defined(CONFIG_MACH_RK30_JBS_PAD)
+#if defined(CONFIG_MACH_RK30_PHONE_PAD)
 
 /* init 640X480 VGA */
 static struct reginfo sensor_init_data[] =

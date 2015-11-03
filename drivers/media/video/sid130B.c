@@ -3212,7 +3212,7 @@ static int sensor_set_flash(struct soc_camera_device *icd, const struct v4l2_que
 {    
     if ((value >= qctrl->minimum) && (value <= qctrl->maximum)) {
         if (value == 3) {       /* ddl@rock-chips.com: torch */
-            sensor_ioctrl(icd, Sensor_Flash, Flash_Torch);   /* Flash On */
+            sensor_ioctrl(icd, Sensor_Flash, Flash_Torch_On);   /* Flash On */
         } else {
             sensor_ioctrl(icd, Sensor_Flash, Flash_Off);
         }

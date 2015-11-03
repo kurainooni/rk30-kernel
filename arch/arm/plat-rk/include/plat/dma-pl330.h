@@ -92,8 +92,14 @@ enum dma_ch {
 	DMACH_SPI0_RX,
 	DMACH_SPI1_TX,
 	DMACH_SPI1_RX,
+	DMACH_DMAC0_MEMTOMEM,
 	DMACH_DMAC1_MEMTOMEM,
 	DMACH_DMAC2_MEMTOMEM,
+	DMACH_DMAC3_MEMTOMEM,
+	DMACH_DMAC4_MEMTOMEM,
+	DMACH_DMAC5_MEMTOMEM,
+	DMACH_DMAC6_MEMTOMEM,
+	DMACH_DMAC7_MEMTOMEM,
 	/* END Marker, also used to denote a reserved channel */
 	DMACH_MAX,
 };
@@ -102,7 +108,10 @@ static inline bool rk29_dma_has_circular(void)
 {
 	return true;
 }
-
+static inline bool rk29_dma_has_infiniteloop(void)
+{
+	return true;
+}
 /*
  * Every PL330 DMAC has max 32 peripheral interfaces,
  * of which some may be not be really used in your
@@ -151,6 +160,16 @@ extern int rk29_dma_setflags(unsigned int channel,
 
 extern int rk29_dma_free(unsigned int channel, struct rk29_dma_client *);
 
+/* rk29_dma_enqueue_ring
+ *
+ * place the given buffer onto the queue of operations for the channel.
+ * The buffer must be allocated from dma coherent memory, or the Dcache/WB
+ * drained before the buffer is given to the DMA system.
+*/
+
+extern int rk29_dma_enqueue_ring(enum dma_ch channel, void *id,
+			       dma_addr_t data, int size, int numofblock, bool sev);
+
 /* rk29_dma_enqueue
  *
  * place the given buffer onto the queue of operations for the channel.
@@ -158,8 +177,9 @@ extern int rk29_dma_free(unsigned int channel, struct rk29_dma_client *);
  * drained before the buffer is given to the DMA system.
 */
 
-extern int rk29_dma_enqueue(unsigned int channel, void *id,
+extern int rk29_dma_enqueue(enum dma_ch channel, void *id,
 			       dma_addr_t data, int size);
+
 
 /* rk29_dma_config
  *

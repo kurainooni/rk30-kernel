@@ -959,13 +959,11 @@ static int cfg80211_netdev_notifier_call(struct notifier_block * nb,
 		 */
 		synchronize_rcu();
 		INIT_LIST_HEAD(&wdev->list);
-#if defined(CONFIG_MT5931) || defined(CONFIG_MT5931_MT6622)
 		/*
 		 * Ensure that all events have been processed and
 		 * freed.
 		 */
 		cfg80211_process_wdev_events(wdev);
-#endif
 		break;
 	case NETDEV_PRE_UP:
 		if (!(wdev->wiphy->interface_modes & BIT(wdev->iftype)))

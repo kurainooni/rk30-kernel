@@ -17,7 +17,7 @@
 
 void i2c_adap_sel(struct rk30_i2c *i2c, int nr, int adap_type)
 {
-        writel((1 << I2C_ADAP_SEL_BIT(nr)) | (1 << I2C_ADAP_SEL_MASK(nr)) ,
+        i2c_writel((1 << I2C_ADAP_SEL_BIT(nr)) | (1 << I2C_ADAP_SEL_MASK(nr)) ,
                         i2c->con_base);
 }
 
@@ -200,8 +200,6 @@ static int rk30_i2c_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, i2c);
 
         i2c->is_div_from_arm[i2c->adap.nr] = pdata->is_div_from_arm;
-        if(i2c->is_div_from_arm[i2c->adap.nr])
-                wake_lock_init(&i2c->idlelock[i2c->adap.nr], WAKE_LOCK_IDLE, dev_name(&pdev->dev));
 
         i2c->i2c_init_hw(i2c, 100 * 1000);
 	dev_info(&pdev->dev, "%s: RK30 I2C adapter\n", dev_name(&i2c->adap.dev));

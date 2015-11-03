@@ -28,6 +28,7 @@
 	 }
 
 static struct map_desc rk30_io_desc[] __initdata = {
+	RK30_DEVICE(ROM),
 	RK30_DEVICE(CORE),
 	RK30_DEVICE(CPU_AXI_BUS),
 #if CONFIG_RK_DEBUG_UART == 0
@@ -46,8 +47,10 @@ static struct map_desc rk30_io_desc[] __initdata = {
 	RK30_DEVICE(GPIO1),
 	RK30_DEVICE(GPIO2),
 	RK30_DEVICE(GPIO3),
+#if !defined(CONFIG_ARCH_RK3066B)
 	RK30_DEVICE(GPIO4),
 	RK30_DEVICE(GPIO6),
+#endif
 	RK30_DEVICE(TIMER0),
 	RK30_DEVICE(TIMER1),
 	RK30_DEVICE(TIMER2),

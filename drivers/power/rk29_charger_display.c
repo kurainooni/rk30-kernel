@@ -64,7 +64,7 @@ static void add_bootmode_charger_to_cmdline(void)
 
 //display charger logo in kernel CAPACITY
 
-
+int g_charge_status = POWER_SUPPLY_STATUS_DISCHARGING;
 static int  __init start_charge_logo_display(void)
 {
 	union power_supply_propval val_status = {POWER_SUPPLY_STATUS_DISCHARGING};
@@ -127,13 +127,14 @@ static int  __init start_charge_logo_display(void)
 		if(board_boot_mode() != BOOT_MODE_REBOOT)   //do not enter power on charge mode when soft  reset
 	    {			
 			add_bootmode_charger_to_cmdline();
-			//boot_mode_init("charge");
+			//boot_mode_init("charge");			
+			g_charge_status = val_status.intval;
 			printk("power in charge mode\n");
 		}
 	}
-
+	printk("%s:g_charge_status=%d\n",__func__,g_charge_status);
 	return 0;
 } 
 
-//subsys_initcall_sync(start_charge_logo_display);
-module_init(start_charge_logo_display);
+subsys_initcall_sync(start_charge_logo_display);
+//late_initcall(start_charge_logo_display);
