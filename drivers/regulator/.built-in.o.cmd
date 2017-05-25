@@ -1,0 +1,1 @@
+cmd_drivers/regulator/built-in.o :=  /home/lgc/arm-build/bin/arm-none-linux-gnueabi-ld -EL    -r -o drivers/regulator/built-in.o drivers/regulator/core.o drivers/regulator/dummy.o drivers/regulator/rk30-pwm-regulator.o drivers/regulator/tps65910-regulator.o 

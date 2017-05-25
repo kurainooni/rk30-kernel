@@ -1,0 +1,1 @@
+cmd_drivers/video/rockchip/built-in.o :=  /home/lgc/arm-build/bin/arm-none-linux-gnueabi-ld -EL    -r -o drivers/video/rockchip/built-in.o drivers/video/rockchip/rk_fb.o drivers/video/rockchip/rkfb_sysfs.o drivers/video/rockchip/lcdc/rk30_lcdc.o drivers/video/rockchip/rga/built-in.o drivers/video/rockchip/hdmi/built-in.o 
